@@ -17,6 +17,11 @@
       payBtn.disabled = true;
       return;
     }
+    if (!global.firebaseApi?.getCurrentUser?.()) {
+      payBtn.disabled = true;
+      cartList.innerHTML = '<p class="muted">Please sign in to continue checkout.</p>';
+      return;
+    }
 
     cartList.innerHTML = cart
       .map(
@@ -83,34 +88,47 @@
       errorBox.textContent = "Payment service is unavailable. Please refresh and try again.";
       return;
     }
-    if (!global.VastraFirebase || typeof global.VastraFirebase.saveOrderToFirestore !== "function") {
+    if (!global.firebaseApi || typeof global.firebaseApi.createPaymentOrder !== "function") {
       errorBox.textContent = "Order service is unavailable. Please refresh and try again.";
+      return;
+    }
+    if (!global.firebaseApi.getCurrentUser?.()) {
+      errorBox.textContent = "Please sign in to place order.";
       return;
     }
 
     setLoading(true);
     try {
-      const totalAmount = global.VastraCart.getSubtotal();
+      global.firebaseApi.trackEvent?.("checkout_started", {
+        itemCount: cart.reduce((sum, item) => sum + Number(item.qty || 0), 0),
+        path: window.location.pathname || ""
+      });
+      console.log("[VASTRA][checkout] creating server payment order");
+      const serverPaymentOrder = await global.firebaseApi.createPaymentOrder();
+      console.log("[VASTRA][checkout] opening Razorpay checkout");
       const paymentResponse = await global.VastraPayment.startRazorpayPayment({
-        amount: totalAmount,
+        keyId: serverPaymentOrder.keyId,
+        order: serverPaymentOrder.order,
         customer: userDetails
       });
 
-      const orderData = {
-        userDetails,
-        products: cart,
-        totalAmount,
-        paymentId: paymentResponse.paymentId,
-        status: "paid"
-      };
-
-      const orderId = await global.VastraFirebase.saveOrderToFirestore(orderData);
-      const completeOrder = { orderId, ...orderData };
-
-      global.VastraCart.persistLastOrder(completeOrder);
+      console.log("[VASTRA][checkout] finalizing paid order");
+      const orderId = await global.firebaseApi.finalizePaidOrder({
+        userInfo: userDetails,
+        payment: {
+          orderId: paymentResponse.razorpayOrderId || "",
+          paymentId: paymentResponse.paymentId || "",
+          signature: paymentResponse.signature || ""
+        }
+      });
+      global.firebaseApi.trackEvent?.("order_completed", {
+        orderId,
+        path: window.location.pathname || ""
+      });
       global.VastraCart.clearCart();
       window.location.href = "./success.html?orderId=" + encodeURIComponent(orderId);
     } catch (error) {
+      console.error("[VASTRA][checkout] failed", error);
       errorBox.textContent = error.message || "Payment failed. Please try again.";
     } finally {
       setLoading(false);
@@ -118,4 +136,6 @@
   });
 
   renderSummary();
+  global.firebaseApi?.subscribeAuth?.(renderSummary);
+  global.VastraCart?.subscribe?.(renderSummary);
 })(window);

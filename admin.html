@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VASTRA Admin Dashboard</title>
+  <style>
+    :root {
+      --bg: #060608;
+      --surface: #101118;
+      --surface2: #171925;
+      --text: #f0ece4;
+      --muted: rgba(240, 236, 228, 0.65);
+      --gold: #c9a96e;
+      --border: rgba(255, 255, 255, 0.12);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: Arial, sans-serif; }
+    .wrap { max-width: 1200px; margin: 0 auto; padding: 24px 16px 80px; }
+    .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 8px; flex-wrap: wrap; }
+    .title { font-size: 28px; letter-spacing: 0.03em; }
+    .muted { color: var(--muted); }
+    .link { color: var(--gold); text-decoration: none; font-size: 14px; }
+    .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 14px 0 20px; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px; box-shadow: 0 12px 28px rgba(0,0,0,0.32); }
+    .metric-label { color: var(--muted); font-size: 12px; }
+    .metric-value { margin-top: 4px; font-size: 22px; color: var(--gold); font-weight: 700; }
+    .section { margin-top: 14px; }
+    .section h2 { margin-bottom: 8px; font-size: 18px; }
+    .table-wrap { overflow: auto; border: 1px solid var(--border); border-radius: 12px; }
+    table { width: 100%; border-collapse: collapse; min-width: 760px; }
+    th, td { text-align: left; padding: 10px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: top; }
+    th { color: var(--muted); font-weight: 600; }
+    .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface2); }
+    .empty { padding: 16px; color: var(--muted); border: 1px dashed var(--border); border-radius: 10px; }
+    @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="top">
+      <div>
+        <h1 class="title">Admin Dashboard</h1>
+        <p class="muted" id="adminStatus">Checking access...</p>
+      </div>
+      <a class="link" href="./1.html">Back to Store</a>
+    </div>
+
+    <section class="grid">
+      <article class="card">
+        <p class="metric-label">Revenue Today</p>
+        <p class="metric-value" id="revToday">₹0</p>
+      </article>
+      <article class="card">
+        <p class="metric-label">Revenue This Week</p>
+        <p class="metric-value" id="revWeek">₹0</p>
+      </article>
+      <article class="card">
+        <p class="metric-label">Total Revenue</p>
+        <p class="metric-value" id="revTotal">₹0</p>
+      </article>
+    </section>
+
+    <section class="section">
+      <h2>Users</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Email</th><th>UID</th><th>Created</th></tr></thead>
+          <tbody id="usersRows"><tr><td colspan="3" class="empty">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Orders</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Order ID</th><th>User</th><th>Items</th><th>Total</th><th>Status</th><th>Date</th></tr></thead>
+          <tbody id="ordersRows"><tr><td colspan="6" class="empty">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Top Products</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Metric</th><th>Product ID</th><th>Count</th></tr></thead>
+          <tbody id="productsRows"><tr><td colspan="3" class="empty">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Analytics Summary</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Event Type</th><th>Count</th></tr></thead>
+          <tbody id="eventsRows"><tr><td colspan="2" class="empty">Loading...</td></tr></tbody>
+        </table>
+      </div>
+      <p class="muted" style="margin-top:8px;">Checkout Conversion: <strong id="conversion">0%</strong></p>
+    </section>
+  </main>
+
+  <script src="./firebase-config.js"></script>
+  <script type="module" src="./firebase-init.js"></script>
+  <script>
+    const ADMIN_EMAILS = ["admin@vastra.com"];
+    const fmt = (n) => "₹" + Number(n || 0).toLocaleString("en-IN");
+    const esc = (v) => String(v || "").replace(/[&<>"']/g, (ch) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      "\"": "&quot;",
+      "'": "&#39;"
+    }[ch]));
+
+    function redirectHome() {
+      window.location.replace("./1.html");
+    }
+
+    function renderDashboard(data) {
+      document.getElementById("revToday").textContent = fmt(data?.revenue?.today || 0);
+      document.getElementById("revWeek").textContent = fmt(data?.revenue?.weekly || 0);
+      document.getElementById("revTotal").textContent = fmt(data?.revenue?.total || 0);
+
+      const users = Array.isArray(data?.users) ? data.users : [];
+      document.getElementById("usersRows").innerHTML = users.length
+        ? users.map((u) => `<tr><td>${esc(u.email)}</td><td><small>${esc(u.uid)}</small></td><td>${esc(u.createdAt)}</td></tr>`).join("")
+        : '<tr><td colspan="3" class="empty">No users found.</td></tr>';
+
+      const orders = Array.isArray(data?.orders) ? data.orders : [];
+      document.getElementById("ordersRows").innerHTML = orders.length
+        ? orders.map((o) => `<tr><td><small>${esc(o.orderId)}</small></td><td>${esc(o.userId)}</td><td>${(o.items || []).length}</td><td>${fmt(o.total || 0)}</td><td><span class="pill">${esc(o.status)}</span></td><td>${esc(o.date)}</td></tr>`).join("")
+        : '<tr><td colspan="6" class="empty">No orders found.</td></tr>';
+
+      const rows = [];
+      (data?.analytics?.mostViewedProducts || []).forEach((p) => rows.push({ metric: "Most Viewed", productId: p.productId, count: p.count }));
+      (data?.analytics?.mostAddedToCartProducts || []).forEach((p) => rows.push({ metric: "Most Added", productId: p.productId, count: p.count }));
+      (data?.analytics?.mostPurchasedProducts || []).forEach((p) => rows.push({ metric: "Most Purchased", productId: p.productId, count: p.count }));
+      document.getElementById("productsRows").innerHTML = rows.length
+        ? rows.map((r) => `<tr><td>${esc(r.metric)}</td><td>${esc(r.productId)}</td><td>${esc(r.count)}</td></tr>`).join("")
+        : '<tr><td colspan="3" class="empty">No product analytics yet.</td></tr>';
+
+      const events = data?.analytics?.eventCounts || {};
+      const eventKeys = Object.keys(events);
+      document.getElementById("eventsRows").innerHTML = eventKeys.length
+        ? eventKeys.map((key) => `<tr><td>${esc(key)}</td><td>${esc(events[key])}</td></tr>`).join("")
+        : '<tr><td colspan="2" class="empty">No analytics events yet.</td></tr>';
+
+      document.getElementById("conversion").textContent = `${Number(data?.analytics?.checkoutConversionRate || 0)}%`;
+    }
+
+    async function init() {
+      try {
+        await window.firebaseReady;
+        const user = window.firebaseApi?.getCurrentUser?.();
+        if (!user) return redirectHome();
+        const email = String(user.email || "").toLowerCase();
+        if (!ADMIN_EMAILS.includes(email)) return redirectHome();
+        document.getElementById("adminStatus").textContent = `Signed in as ${email}`;
+
+        const data = await window.firebaseApi.getAdminDashboard();
+        renderDashboard(data);
+      } catch (error) {
+        document.getElementById("adminStatus").textContent = error.message || "Unable to load dashboard.";
+      }
+    }
+
+    window.firebaseApi?.subscribeAuth?.((user) => {
+      const email = String(user?.email || "").toLowerCase();
+      if (!user || !ADMIN_EMAILS.includes(email)) redirectHome();
+    });
+    init();
+  </script>
+</body>
+</html>

@@ -1,110 +1,227 @@
-/* Shared cart utilities for VASTRA storefront pages */
+/* Shared Firestore-backed cart utilities */
 (function initVastraCart(global) {
-  const CART_KEY = "vastra_cart";
-  const LEGACY_CART_KEY = "cart";
-  const LAST_ORDER_KEY = "vastra_last_order";
-
-  function getCart() {
-    try {
-      const raw = localStorage.getItem(CART_KEY);
-      if (raw) return JSON.parse(raw);
-
-      // Backward compatibility if older code stored cart under "cart".
-      const legacyRaw = localStorage.getItem(LEGACY_CART_KEY);
-      if (!legacyRaw) return [];
-
-      const legacyCart = JSON.parse(legacyRaw);
-      if (Array.isArray(legacyCart)) {
-        saveCart(legacyCart);
-        return legacyCart;
-      }
-      return [];
-    } catch (error) {
-      return [];
-    }
-  }
-
-  function saveCart(cart) {
-    localStorage.setItem(CART_KEY, JSON.stringify(cart));
-  }
+  const state = {
+    cart: [],
+    lastOrder: null
+  };
+  const listeners = new Set();
 
   function formatPrice(value) {
     return "₹" + Number(value || 0).toLocaleString("en-IN");
   }
 
+  function normalizeItem(item) {
+    return {
+      id: String(item.id),
+      name: item.name || "Product",
+      price: Number(item.price || 0),
+      image: item.image || "",
+      qty: Math.max(1, Number(item.qty || 1))
+    };
+  }
+
+  function cloneCart() {
+    return state.cart.map((item) => ({ ...item }));
+  }
+
+  function notify() {
+    listeners.forEach((listener) => {
+      try {
+        listener(cloneCart());
+      } catch {
+        // ignore listener errors
+      }
+    });
+  }
+
+  function setCart(items) {
+    state.cart = (items || []).map(normalizeItem);
+    notify();
+  }
+
+  function ensureFirebaseApi() {
+    if (!global.firebaseApi) {
+      throw new Error("Database unavailable. Check Firebase config.");
+    }
+    return global.firebaseApi;
+  }
+
+  function reportAsyncCartError(error, fallbackMessage) {
+    const message = error && error.message ? error.message : fallbackMessage;
+    console.error("[VASTRA][cart]", message);
+    showToast(message);
+  }
+
+  function bindRemoteCart() {
+    let unsubscribe = () => {};
+    const tryBind = () => {
+      if (!global.firebaseApi || typeof global.firebaseApi.subscribeCart !== "function") return false;
+      unsubscribe();
+      unsubscribe = global.firebaseApi.subscribeCart((items) => setCart(items));
+      return true;
+    };
+    const handleSignedOut = () => {
+      setCart([]);
+    };
+    if (!tryBind()) {
+      window.addEventListener(
+        "load",
+        () => {
+          setTimeout(() => {
+            tryBind();
+          }, 250);
+        },
+        { once: true }
+      );
+    }
+    if (global.firebaseApi?.subscribeAuth) {
+      global.firebaseApi.subscribeAuth((user) => {
+        if (!user) {
+          handleSignedOut();
+          return;
+        }
+        tryBind();
+      });
+    }
+  }
+
+  function getCart() {
+    return cloneCart();
+  }
+
+  function saveCart(cart) {
+    setCart(cart);
+    return cloneCart();
+  }
+
   function getCartCount() {
-    return getCart().reduce((total, item) => total + Number(item.qty || 0), 0);
+    return state.cart.reduce((total, item) => total + Number(item.qty || 0), 0);
   }
 
   function addToCart(product, quantity) {
-    const qty = Math.max(1, Number(quantity || 1));
-    const cart = getCart();
-    const existing = cart.find((item) => item.id === product.id);
-
-    if (existing) {
-      existing.qty += qty;
-    } else {
-      cart.push({
-        id: product.id,
-        name: product.name,
-        price: Number(product.price),
-        image: product.image || "",
-        qty
-      });
+    if (!global.firebaseApi?.getCurrentUser?.()) {
+      showToast("Please sign in to use cart");
+      return cloneCart();
     }
-
-    saveCart(cart);
-    return cart;
+    const qty = Math.max(1, Number(quantity || 1));
+    const id = String(product.id);
+    const existing = state.cart.find((item) => String(item.id) === id);
+    if (existing) existing.qty += qty;
+    else {
+      state.cart.push(
+        normalizeItem({
+          id,
+          name: product.name,
+          price: product.price,
+          image: product.image,
+          qty
+        })
+      );
+    }
+    notify();
+    try {
+      ensureFirebaseApi()
+        .upsertCartItem(product, qty)
+        .catch((error) => reportAsyncCartError(error, "Could not sync cart item."));
+      ensureFirebaseApi().trackEvent?.("add_to_cart", {
+        productId: String(product.productId || product.id || ""),
+        cartItemId: String(product.id || ""),
+        qty,
+        source: window.location.pathname || ""
+      });
+    } catch (error) {
+      showToast(error.message);
+    }
+    return cloneCart();
   }
 
   function updateQuantity(id, delta) {
-    const cart = getCart();
-    const item = cart.find((entry) => String(entry.id) === String(id));
-    if (!item) return cart;
-
-    item.qty += Number(delta);
-    if (item.qty < 1) {
-      return removeFromCart(id);
+    const cartId = String(id);
+    const item = state.cart.find((entry) => String(entry.id) === cartId);
+    if (!item) return cloneCart();
+    item.qty += Number(delta || 0);
+    if (item.qty <= 0) {
+      state.cart = state.cart.filter((entry) => String(entry.id) !== cartId);
+      notify();
+      try {
+        ensureFirebaseApi()
+          .removeCartItem(cartId)
+          .catch((error) => reportAsyncCartError(error, "Could not remove cart item."));
+      } catch {
+        // ignore
+      }
+      return cloneCart();
     }
-
-    saveCart(cart);
-    return cart;
+    notify();
+    try {
+      ensureFirebaseApi()
+        .setCartItemQty(cartId, item.qty)
+        .catch((error) => reportAsyncCartError(error, "Could not update cart quantity."));
+    } catch {
+      // ignore
+    }
+    return cloneCart();
   }
 
   function setQuantity(id, qty) {
-    const cart = getCart();
-    const item = cart.find((entry) => String(entry.id) === String(id));
-    if (!item) return cart;
-
+    const cartId = String(id);
+    const item = state.cart.find((entry) => String(entry.id) === cartId);
+    if (!item) return cloneCart();
     item.qty = Math.max(1, Number(qty || 1));
-    saveCart(cart);
-    return cart;
+    notify();
+    try {
+      ensureFirebaseApi()
+        .setCartItemQty(cartId, item.qty)
+        .catch((error) => reportAsyncCartError(error, "Could not update cart quantity."));
+    } catch {
+      // ignore
+    }
+    return cloneCart();
   }
 
   function removeFromCart(id) {
-    const updated = getCart().filter((item) => String(item.id) !== String(id));
-    saveCart(updated);
-    return updated;
+    const cartId = String(id);
+    state.cart = state.cart.filter((entry) => String(entry.id) !== cartId);
+    notify();
+    try {
+      ensureFirebaseApi()
+        .removeCartItem(cartId)
+        .catch((error) => reportAsyncCartError(error, "Could not remove cart item."));
+    } catch {
+      // ignore
+    }
+    return cloneCart();
   }
 
   function clearCart() {
-    saveCart([]);
+    state.cart = [];
+    notify();
+    try {
+      ensureFirebaseApi()
+        .clearCart()
+        .catch((error) => reportAsyncCartError(error, "Could not clear cart."));
+    } catch {
+      // ignore
+    }
   }
 
   function getSubtotal() {
-    return getCart().reduce((sum, item) => sum + item.price * item.qty, 0);
+    return state.cart.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.qty || 0), 0);
   }
 
   function persistLastOrder(order) {
-    localStorage.setItem(LAST_ORDER_KEY, JSON.stringify(order));
+    state.lastOrder = order || null;
   }
 
   function getLastOrder() {
-    try {
-      return JSON.parse(localStorage.getItem(LAST_ORDER_KEY) || "null");
-    } catch (error) {
-      return null;
-    }
+    return state.lastOrder;
+  }
+
+  function subscribe(listener) {
+    if (typeof listener !== "function") return () => {};
+    listeners.add(listener);
+    listener(cloneCart());
+    return () => listeners.delete(listener);
   }
 
   function showToast(message) {
@@ -156,6 +273,8 @@
     getSubtotal,
     persistLastOrder,
     getLastOrder,
-    showToast
+    showToast,
+    subscribe
   };
+  bindRemoteCart();
 })(window);

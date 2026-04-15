@@ -2,6 +2,7 @@ import { getLocalCart, setLocalCart } from "../services/cartService.js";
 import { createOrder } from "../services/orderService.js";
 import { showToast } from "../components/toast.js";
 import { api } from "../services/api.js";
+import { LAST_ORDER_KEY, setJson } from "../utils/storage.js";
 
 const RAZORPAY_FALLBACK_TEST_KEY = "rzp_test_1DP5mmOlF5G5ag";
 
@@ -160,7 +161,7 @@ export function checkoutPage(app) {
         address: { ...details, coupon: appliedCoupon }
       });
       setLocalCart([]);
-      localStorage.setItem("vastra_last_order", JSON.stringify(order));
+      setJson(LAST_ORDER_KEY, order);
       showToast("Order placed");
       location.hash = "#/success";
     } catch (error) {

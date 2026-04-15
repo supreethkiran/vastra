@@ -5,11 +5,10 @@ const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 require("dotenv").config();
 
-const authRoutes = require("./routes/auth");
 const productRoutes = require("./routes/products");
-const cartRoutes = require("./routes/cart");
-const orderRoutes = require("./routes/orders");
-const paymentRoutes = require("./routes/payments");
+const secureCheckoutRoutes = require("./routes/secureCheckout");
+const analyticsRoutes = require("./routes/analytics");
+const adminRoutes = require("./routes/admin");
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -35,11 +34,20 @@ app.get("/api/health", (req, res) => {
   res.json({ ok: true, service: "vastra-backend" });
 });
 
-app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
-app.use("/api/cart", cartRoutes);
-app.use("/api/orders", orderRoutes);
-app.use("/api/payments", paymentRoutes);
+app.use("/api/secure-checkout", secureCheckoutRoutes);
+app.use("/api/analytics", analyticsRoutes);
+app.use("/api/admin", adminRoutes);
+
+// Legacy JWT/file-db endpoints are intentionally disabled to avoid duplicate sources of truth.
+app.use(["/api/auth", "/api/cart", "/api/orders", "/api/payments"], (req, res) => {
+  return res.status(410).json({
+    message: "Legacy API disabled. Use Firebase Auth + Firestore + /api/secure-checkout."
+  });
+});
+app.get("/admin.html", (req, res) => {
+  return res.sendFile(path.join(__dirname, "../../admin.html"));
+});
 app.use("/", express.static(path.join(__dirname, "../../frontend")));
 
 app.use("/api/*", (req, res) => {
@@ -48,6 +56,13 @@ app.use("/api/*", (req, res) => {
 
 app.use((error, req, res, next) => {
   const status = error.status || 500;
+  // eslint-disable-next-line no-console
+  console.error("[api-error]", {
+    path: req.originalUrl,
+    method: req.method,
+    status,
+    message: error.message || "Internal server error"
+  });
   res.status(status).json({ message: error.message || "Internal server error" });
 });
 

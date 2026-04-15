@@ -363,6 +363,8 @@
 <!-- TOAST -->
 <div style="position:fixed;bottom:32px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--surface2);border:1px solid var(--gold);padding:12px 28px;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);z-index:9000;opacity:0;transition:all 0.4s var(--ease);white-space:nowrap;backdrop-filter:blur(12px);" id="toast"></div>
 
+<script src="./firebase-config.js"></script>
+<script type="module" src="./firebase-init.js"></script>
 <script src="./cart.js"></script>
 <script>
 /* 3D BG */
@@ -447,6 +449,7 @@ document.getElementById('addBtn').addEventListener('click',()=>{
   const numericPrice=Number((document.getElementById('productPrice').textContent || '').replace(/[^\d]/g,'')) || product.price;
   const item = {
     id: `${product.id}-${size}`,
+    productId: String(product.id),
     name: `${cleanName} (${size})`,
     price: numericPrice,
     image: product.img
@@ -486,6 +489,11 @@ document.getElementById('thumbImg1').src=product.thumb1||product.img;
 document.getElementById('thumbImg2').src=product.thumb2||product.img;
 document.querySelector('.cat').textContent=product.cat;
 document.title=`VASTRA — ${product.name.replace('\n',' ')}`;
+window.firebaseApi?.trackEvent?.('product_view', {
+  productId: String(product.id),
+  name: product.name.replace('\n', ' '),
+  path: window.location.pathname || ''
+});
 
 const modelViewerState = { scriptLoaded: false, scriptPromise: null };
 function shouldUse3DViewer() {

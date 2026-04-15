@@ -1,10 +1,10 @@
-import { TOKEN_KEY } from "../utils/storage.js";
+import { TOKEN_KEY, getJson } from "../utils/storage.js";
 
 const apiBaseFromMeta = document.querySelector('meta[name="api-base"]')?.getAttribute("content");
 export const API_BASE = apiBaseFromMeta || `${window.location.origin}/api`;
 
 export async function api(path, options = {}) {
-  const token = localStorage.getItem(TOKEN_KEY);
+  const token = getJson(TOKEN_KEY, "");
   const controller = new AbortController();
   const timeoutMs = options.timeoutMs || 12000;
   const timer = setTimeout(() => controller.abort(), timeoutMs);

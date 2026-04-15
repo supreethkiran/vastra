@@ -1668,6 +1668,8 @@
   </div>
 </div>
 
+<script src="./firebase-config.js"></script>
+<script type="module" src="./firebase-init.js"></script>
 <script src="./cart.js"></script>
 <script>
 /* ─── THREE.JS MEGA 3D BACKGROUND ───────────────────────── */
@@ -2065,11 +2067,11 @@ document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
 /* ─── CART ──────────────────────────────────────────────── */
 function getCart() {
   if (window.VastraCart?.getCart) return window.VastraCart.getCart();
-  try { return JSON.parse(localStorage.getItem('vastra_cart') || '[]'); } catch { return []; }
+  return [];
 }
 function saveCart(c) {
   if (window.VastraCart?.saveCart) return window.VastraCart.saveCart(c);
-  localStorage.setItem('vastra_cart', JSON.stringify(c));
+  return c;
 }
 const fmt = p => '₹' + p.toLocaleString('en-IN');
 
@@ -2079,6 +2081,10 @@ function updateBadge() {
   badge.textContent = total;
   badge.classList.toggle('show', total > 0);
 }
+window.VastraCart?.subscribe?.(() => {
+  updateBadge();
+  renderCart();
+});
 
 function addToCart(item) {
   if (window.VastraCart?.addToCart) {
@@ -2187,13 +2193,14 @@ function showToast(msg) {
 
 function handleAddToCartButton(btn) {
   if (!btn) return;
+  const rawId = String(btn.dataset.id || "").trim();
   const product = {
-    id: Number(btn.dataset.id),
+    id: rawId,
     name: btn.dataset.name,
     price: Number(btn.dataset.price),
     image: btn.dataset.image
   };
-  if (!product.id || !product.name || !product.price || !product.image) return;
+  if (!product.id || !product.name || !Number.isFinite(product.price) || product.price <= 0 || !product.image) return;
 
   addToCart(product);
   const originalText = btn.dataset.originalText || btn.textContent.trim();
@@ -2214,8 +2221,58 @@ function wirePlaceholderInteractions() {
     document.getElementById('products')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     showToast('Explore featured products');
   });
-  document.querySelector('.modal-submit')?.addEventListener('click', () => {
-    window.location.href = './frontend/index.html#/login';
+  const loginBtn = document.querySelector('.modal-submit');
+  const loginEmailInput = document.querySelector('#loginModal input[type="email"]');
+  const loginPasswordInput = document.querySelector('#loginModal input[type="password"]');
+  loginBtn?.addEventListener('click', async () => {
+    const email = String(loginEmailInput?.value || '').trim();
+    const password = String(loginPasswordInput?.value || '');
+    if (!email || !password) {
+      showToast('Enter email and password');
+      return;
+    }
+    if (!window.firebaseApi?.signInWithEmail || !window.firebaseApi?.signUpWithEmail) {
+      showToast('Auth service unavailable');
+      return;
+    }
+    try {
+      await window.firebaseApi.signInWithEmail(email, password);
+      document.getElementById('loginModal').classList.remove('open');
+      showToast('Signed in successfully');
+    } catch (error) {
+      const missingUser = /user-not-found|invalid-credential/i.test(String(error?.message || ""));
+      if (!missingUser) {
+        showToast(error?.message || 'Unable to sign in');
+        return;
+      }
+      try {
+        await window.firebaseApi.signUpWithEmail(email, password);
+        document.getElementById('loginModal').classList.remove('open');
+        showToast('Account created and signed in');
+      } catch (signupError) {
+        showToast(signupError?.message || 'Unable to create account');
+      }
+    }
+  });
+  document.querySelector('.modal-footer-text a')?.addEventListener('click', async (event) => {
+    event.preventDefault();
+    const email = String(loginEmailInput?.value || '').trim();
+    const password = String(loginPasswordInput?.value || '');
+    if (!email || !password) {
+      showToast('Enter email and password to create account');
+      return;
+    }
+    if (!window.firebaseApi?.signUpWithEmail) {
+      showToast('Auth service unavailable');
+      return;
+    }
+    try {
+      await window.firebaseApi.signUpWithEmail(email, password);
+      document.getElementById('loginModal').classList.remove('open');
+      showToast('Account created');
+    } catch (error) {
+      showToast(error?.message || 'Unable to create account');
+    }
   });
   const newsletterBtn = document.querySelector('.newsletter-btn');
   const newsletterInput = document.querySelector('.newsletter-input');
@@ -2231,7 +2288,7 @@ function wirePlaceholderInteractions() {
 }
 
 /* ─── PRODUCTS ──────────────────────────────────────────── */
-const PRODUCTS = [
+const DEFAULT_PRODUCTS = [
   { id:1, name:'Noir Oversized Hoodie', category:'Hoodies', price:1799, badge:'New', badgeType:'',
     image:'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=700&h=900&fit=crop&q=80',
     hoverImage:'https://images.unsplash.com/photo-1556821840-3a63f15732ce?w=700&h=900&fit=crop&q=80' },
@@ -2258,9 +2315,9 @@ const PRODUCTS = [
     hoverImage:'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=700&h=900&fit=crop&q=80' },
 ];
 
-function renderProducts() {
+function renderProducts(products) {
   const grid = document.getElementById('productGrid');
-  grid.innerHTML = PRODUCTS.map((p, i) => `
+  grid.innerHTML = products.map((p, i) => `
     <article class="product-card reveal reveal-delay-${(i % 4) + 1}">
       <div class="product-card-glow"></div>
       <div class="product-img-wrap">
@@ -2299,12 +2356,48 @@ function renderProducts() {
 
   initCardTilt();
 }
+async function initCatalog() {
+  let products = DEFAULT_PRODUCTS;
+  try {
+    if (window.firebaseReady) {
+      await window.firebaseReady;
+    }
+    if (window.firebaseApi?.getProducts) {
+      const remoteProducts = await window.firebaseApi.getProducts();
+      if (Array.isArray(remoteProducts) && remoteProducts.length) {
+        products = remoteProducts.map((p) => ({
+          id: p.id,
+          name: p.name,
+          category: p.category || 'Essentials',
+          price: Number(p.price || 0),
+          badge: p.badge || '',
+          badgeType: p.badgeType || '',
+          image: p.image || '',
+          hoverImage: p.hoverImage || p.image || ''
+        }));
+      }
+    }
+  } catch (error) {
+    showToast('Using fallback catalog');
+  }
+  renderProducts(products);
+}
 
-renderProducts();
+initCatalog();
 initSpotlightTilt();
 initCatTilt();
 updateBadge();
 wirePlaceholderInteractions();
+
+if (window.location.hash === '#/admin') {
+  window.firebaseApi?.subscribeAuth?.((user) => {
+    if (!user || !window.firebaseApi?.isAdminUser?.(user)) {
+      window.location.replace('./1.html');
+      return;
+    }
+    window.location.replace('./admin.html');
+  });
+}
 
 /* ─── PAGE TRANSITION ───────────────────────────────────── */
 (function initPageTransitions() {

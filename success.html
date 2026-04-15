@@ -46,27 +46,40 @@
     </section>
   </main>
 
+  <script src="./firebase-config.js"></script>
+  <script type="module" src="./firebase-init.js"></script>
   <script src="./cart.js"></script>
   <script>
-    const order = window.VastraCart.getLastOrder();
     const orderIdParam = new URLSearchParams(window.location.search).get("orderId");
-    const orderId = orderIdParam || (order && order.orderId) || "N/A";
+    const orderId = orderIdParam || "N/A";
 
     document.getElementById("orderIdText").textContent = "Order ID: " + orderId;
 
-    if (order && Array.isArray(order.products)) {
-      document.getElementById("orderProducts").innerHTML = order.products
-        .map((item) => `
-          <div class="item">
-            <span>${item.name} x ${item.qty}</span>
-            <strong>${window.VastraCart.formatPrice(item.price * item.qty)}</strong>
-          </div>
-        `)
-        .join("");
-      document.getElementById("orderTotal").textContent = "Total Paid: " + window.VastraCart.formatPrice(order.totalAmount || 0);
-    } else {
-      document.getElementById("orderProducts").innerHTML = '<p>No order items found.</p>';
+    async function loadOrder() {
+      if (!orderIdParam || !window.firebaseApi?.getOrderById) {
+        document.getElementById("orderProducts").innerHTML = "<p>No order items found.</p>";
+        return;
+      }
+      try {
+        const order = await window.firebaseApi.getOrderById(orderIdParam);
+        if (!order || !Array.isArray(order.items) || !order.items.length) {
+          document.getElementById("orderProducts").innerHTML = "<p>No order items found.</p>";
+          return;
+        }
+        document.getElementById("orderProducts").innerHTML = order.items
+          .map((item) => `
+            <div class="item">
+              <span>${item.name} x ${item.qty}</span>
+              <strong>${window.VastraCart.formatPrice(item.price * item.qty)}</strong>
+            </div>
+          `)
+          .join("");
+        document.getElementById("orderTotal").textContent = "Total Paid: " + window.VastraCart.formatPrice(order.total || 0);
+      } catch (error) {
+        document.getElementById("orderProducts").innerHTML = `<p>${error.message || "Unable to load order."}</p>`;
+      }
     }
+    loadOrder();
   </script>
 </body>
 </html>

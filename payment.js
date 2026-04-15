@@ -1,21 +1,23 @@
 /* Razorpay test mode payment helper */
 (function initVastraPayment(global) {
-  // Public Razorpay test key (replace with your own for production use).
-  const RAZORPAY_TEST_KEY = "rzp_test_1DP5mmOlF5G5ag";
-
   function startRazorpayPayment(payload) {
     return new Promise((resolve, reject) => {
       if (!global.Razorpay) {
         reject(new Error("Razorpay SDK failed to load."));
         return;
       }
+      if (!payload || !payload.order || !payload.keyId) {
+        reject(new Error("Payment order is unavailable. Please retry checkout."));
+        return;
+      }
 
       const options = {
-        key: RAZORPAY_TEST_KEY,
-        amount: Math.round(Number(payload.amount || 0) * 100),
+        key: payload.keyId,
+        amount: Number(payload.order.amount || 0),
         currency: "INR",
         name: "VASTRA",
         description: "Order Payment",
+        order_id: payload.order.id,
         prefill: {
           name: payload.customer.name,
           email: payload.customer.email,
@@ -27,7 +29,7 @@
         handler(response) {
           resolve({
             paymentId: response.razorpay_payment_id,
-            orderId: response.razorpay_order_id || "",
+            razorpayOrderId: response.razorpay_order_id || "",
             signature: response.razorpay_signature || ""
           });
         },

@@ -1,5 +1,7 @@
+import { LAST_ORDER_KEY, getJson } from "../utils/storage.js";
+
 export function successPage(app) {
-  const order = JSON.parse(localStorage.getItem("vastra_last_order") || "null");
+  const order = getJson(LAST_ORDER_KEY, null);
   app.innerHTML = `
     <div class="card stack fade-in center-card" style="padding:20px;max-width:700px;">
       <h1>Payment Successful</h1>
