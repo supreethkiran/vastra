@@ -14,7 +14,7 @@ export function productCard(product) {
         <p class="muted">${product.category}</p>
         <div class="row">
           <span class="pill">⭐ ${rating}</span>
-          <span class="muted">${stock < 8 ? `Only ${stock} left` : "Selling fast"}</span>
+          <span class="muted">${stock < 8 ? `${stock} in stock` : "In stock"}</span>
         </div>
         <p class="price">₹${Number(product.price).toLocaleString("en-IN")}</p>
         <div class="row">

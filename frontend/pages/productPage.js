@@ -48,7 +48,7 @@ export async function productPage(app, id) {
               <button id="wishBtn" class="wishlist-btn ${isWishlisted(product.id) ? "active" : ""}" aria-label="Wishlist">♡</button>
             </div>
             <p class="muted">${product.category}</p>
-            <p class="muted">⭐ ${rating} · ${stock < 8 ? `Only ${stock} left` : "Selling fast"}</p>
+            <p class="muted">⭐ ${rating} · ${stock < 8 ? `${stock} in stock` : "In stock"}</p>
             <p>${product.description}</p>
             <p class="price">₹${Number(product.price).toLocaleString("en-IN")}</p>
             <button id="addOneBtn" class="btn primary">Add to Cart</button>

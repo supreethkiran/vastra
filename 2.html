@@ -244,8 +244,8 @@
 <div class="page">
   <!-- TOP BAR -->
   <header class="topbar">
-    <a href="1.html" class="brand">VASTRA</a>
-    <a href="1.html" class="back-link">← Back to Shop</a>
+    <a href="./index.html" class="brand">VASTRA</a>
+    <a href="./index.html" class="back-link">← Back to Shop</a>
   </header>
 
   <div class="wrap">
@@ -339,19 +339,19 @@
         <h2 class="sec-title">Complete the Look</h2>
       </div>
       <div class="related-grid">
-        <a href="#" class="related-card">
+        <a href="./2.html?id=2" class="related-card">
           <div class="related-img"><img src="https://images.unsplash.com/photo-1542272604-787c3835535d?w=400&h=530&fit=crop&q=80" alt="Cargo"></div>
           <div class="related-info"><div class="related-name">Shadow Cargo Pant</div><div class="related-price">₹3,299</div></div>
         </a>
-        <a href="#" class="related-card">
+        <a href="./2.html?id=3" class="related-card">
           <div class="related-img"><img src="https://images.unsplash.com/photo-1551028719-00167b16eac5?w=400&h=530&fit=crop&q=80" alt="Coat"></div>
           <div class="related-info"><div class="related-name">Void Overcoat</div><div class="related-price">₹5,999</div></div>
         </a>
-        <a href="#" class="related-card">
+        <a href="./2.html?id=4" class="related-card">
           <div class="related-img"><img src="https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&h=530&fit=crop&q=80" alt="Tee"></div>
           <div class="related-info"><div class="related-name">Minimal Tee — White</div><div class="related-price">₹999</div></div>
         </a>
-        <a href="#" class="related-card">
+        <a href="./2.html?id=1" class="related-card">
           <div class="related-img"><img src="https://images.unsplash.com/photo-1485230895905-ec40ba36b9bc?w=400&h=530&fit=crop&q=80" alt="Bomber"></div>
           <div class="related-info"><div class="related-name">Urban Bomber Jacket</div><div class="related-price">₹4,499</div></div>
         </a>
@@ -363,7 +363,7 @@
 <!-- TOAST -->
 <div style="position:fixed;bottom:32px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--surface2);border:1px solid var(--gold);padding:12px 28px;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);z-index:9000;opacity:0;transition:all 0.4s var(--ease);white-space:nowrap;backdrop-filter:blur(12px);" id="toast"></div>
 
-<script src="./js/cart.js"></script>
+<script src="./cart.js"></script>
 <script>
 /* 3D BG */
 (function(){
@@ -457,13 +457,6 @@ document.getElementById('addBtn').addEventListener('click',()=>{
 document.getElementById('goToCartBtn').addEventListener('click',()=>{
   window.location.href='./cart.html';
 });
-document.querySelectorAll('a[href="#"]').forEach(link=>{
-  link.addEventListener('click',e=>{
-    e.preventDefault();
-    showToast('More product links coming soon');
-  });
-});
-
 /* GALLERY TILT */
 document.querySelectorAll('.gallery-item').forEach(item=>{
   item.addEventListener('mousemove',e=>{

@@ -6,7 +6,7 @@ export function renderNavbar(onNavigate) {
   const el = document.getElementById("appHeader");
   el.innerHTML = `
     <nav class="nav">
-      <div class="brand">VASTRA</div>
+      <a class="brand" href="#/">VASTRA</a>
       <div class="nav-search-wrap">
         <input id="navSearchInput" type="search" placeholder="Search products...">
         <div id="navSearchSuggest" class="search-suggest" style="display:none;"></div>
