@@ -29,9 +29,9 @@
     .item h3 { font-size: 16px; margin-bottom: 8px; }
     .item p { color: var(--gold); margin-bottom: 12px; font-weight: 700; }
     .qty { display: inline-flex; align-items: center; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
-    .qty button { background: var(--surface-2); color: var(--text); border: 0; width: 34px; height: 34px; cursor: pointer; font-size: 18px; }
+    .qty button { background: var(--surface-2); color: var(--text); border: 0; width: 34px; height: 34px; cursor: pointer; font-size: 18px; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
     .qty span { width: 36px; text-align: center; font-size: 14px; }
-    .remove { align-self: center; background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 999px; width: 32px; height: 32px; cursor: pointer; }
+    .remove { align-self: center; background: var(--surface-2); border: 1px solid var(--border); color: var(--muted); border-radius: 999px; width: 40px; height: 40px; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
     .summary { padding: 18px; }
     .summary h2 { font-size: 18px; margin-bottom: 14px; }
     .row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; color: var(--muted); }
@@ -40,6 +40,10 @@
     .empty { text-align: center; padding: 45px 20px; color: var(--muted); }
     @media (max-width: 900px) {
       .layout { grid-template-columns: 1fr; }
+      .item { grid-template-columns: 72px 1fr auto; gap: 10px; }
+      .item img { width: 72px; height: 88px; }
+      .remove { width: 44px; height: 44px; font-size: 18px; }
+      .qty button { width: 36px; height: 36px; }
     }
   </style>
 </head>

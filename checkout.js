@@ -79,6 +79,15 @@
       return;
     }
 
+    if (!global.VastraPayment || typeof global.VastraPayment.startRazorpayPayment !== "function") {
+      errorBox.textContent = "Payment service is unavailable. Please refresh and try again.";
+      return;
+    }
+    if (!global.VastraFirebase || typeof global.VastraFirebase.saveOrderToFirestore !== "function") {
+      errorBox.textContent = "Order service is unavailable. Please refresh and try again.";
+      return;
+    }
+
     setLoading(true);
     try {
       const totalAmount = global.VastraCart.getSubtotal();

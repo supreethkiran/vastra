@@ -20,7 +20,7 @@
       "id": "p1",
       "name": "Noir Oversized Hoodie",
       "category": "Hoodies",
-      "price": 2499,
+      "price": 1799,
       "image": "https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=700&h=900&fit=crop&q=80",
       "description": "Heavyweight fleece hoodie with oversized silhouette.",
       "stock": 40
@@ -29,7 +29,7 @@
       "id": "p2",
       "name": "Shadow Cargo Pant",
       "category": "Bottoms",
-      "price": 3299,
+      "price": 1699,
       "image": "https://images.unsplash.com/photo-1542272604-787c3835535d?w=700&h=900&fit=crop&q=80",
       "description": "Utility cargo with tapered fit and premium twill.",
       "stock": 32
@@ -38,7 +38,7 @@
       "id": "p3",
       "name": "Minimal Tee White",
       "category": "Essentials",
-      "price": 999,
+      "price": 899,
       "image": "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=700&h=900&fit=crop&q=80",
       "description": "Soft cotton essential tee for daily wear.",
       "stock": 100

@@ -948,15 +948,29 @@
       width: 28px; height: 28px; color: var(--text); font-size: 16px;
       display: flex; align-items: center; justify-content: center;
       transition: border-color 0.3s;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
     }
     .qty-btn:hover { border-color: var(--gold); }
     .qty-val { font-size: 13px; min-width: 20px; text-align: center; }
     .cart-item-remove {
-      background: none; border: none; color: var(--muted);
-      font-size: 20px; align-self: flex-start; padding: 0 4px; line-height: 1;
-      transition: color 0.3s;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 18px;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      align-self: flex-start;
+      line-height: 1;
+      transition: color 0.3s, border-color 0.3s, background 0.3s;
+      border-radius: 999px;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
     }
-    .cart-item-remove:hover { color: var(--red); }
+    .cart-item-remove:hover { color: var(--red); border-color: rgba(224,85,85,0.55); }
     .drawer-footer { padding: 20px 24px; border-top: 1px solid var(--border); }
     .cart-total-row {
       display: flex; justify-content: space-between;
@@ -1148,6 +1162,11 @@
       .product-grid, .cat-grid { grid-template-columns: 1fr; gap: 10px; }
       .product-quick-add { transform: translateY(0); }
       .quick-add-btn { font-size: 9px; letter-spacing: 0.14em; }
+      .drawer-items { padding: 14px 14px; }
+      .cart-item { gap: 10px; padding: 12px 0; }
+      .cart-item-img { width: 62px; height: 78px; }
+      .qty-btn { width: 34px; height: 34px; font-size: 18px; }
+      .cart-item-remove { width: 44px; height: 44px; font-size: 20px; }
       .split-section { padding: 86px 0; }
       .split-heading { font-size: clamp(34px, 12vw, 44px); }
       .spotlight-section { padding: 86px 0; }
@@ -2090,26 +2109,52 @@ function renderCart() {
         <div class="cart-item-name">${item.name}</div>
         <div class="cart-item-price">${fmt(item.price)}</div>
         <div class="cart-item-qty">
-          <button class="qty-btn" onclick="changeQty(${item.id},-1)">−</button>
+          <button class="qty-btn" type="button" data-action="dec" data-id="${String(item.id).replace(/"/g, '&quot;')}">−</button>
           <span class="qty-val">${item.qty}</span>
-          <button class="qty-btn" onclick="changeQty(${item.id},1)">+</button>
+          <button class="qty-btn" type="button" data-action="inc" data-id="${String(item.id).replace(/"/g, '&quot;')}">+</button>
         </div>
       </div>
-      <button class="cart-item-remove" onclick="removeItem(${item.id})">✕</button>
+      <button class="cart-item-remove" type="button" data-action="remove" data-id="${String(item.id).replace(/"/g, '&quot;')}">✕</button>
     </div>`).join('');
   const sub = cart.reduce((s, i) => s + i.price * i.qty, 0);
   document.getElementById('subTotal').textContent = fmt(sub);
   document.getElementById('grandTotal').textContent = fmt(sub);
 }
 
-window.changeQty = (id, d) => {
-  const cart = getCart(); const item = cart.find(i => i.id === id);
-  if (item) { item.qty += d; if (item.qty < 1) cart.splice(cart.indexOf(item), 1); }
-  saveCart(cart); updateBadge(); renderCart();
-};
-window.removeItem = id => {
-  saveCart(getCart().filter(i => i.id !== id)); updateBadge(); renderCart();
-};
+function changeQty(id, d) {
+  if (window.VastraCart?.updateQuantity) {
+    window.VastraCart.updateQuantity(id, d);
+  } else {
+    const cart = getCart();
+    const item = cart.find((entry) => String(entry.id) === String(id));
+    if (item) {
+      item.qty += d;
+      if (item.qty < 1) cart.splice(cart.indexOf(item), 1);
+    }
+    saveCart(cart);
+  }
+  updateBadge();
+  renderCart();
+}
+function removeItem(id) {
+  if (window.VastraCart?.removeFromCart) {
+    window.VastraCart.removeFromCart(id);
+  } else {
+    saveCart(getCart().filter((entry) => String(entry.id) !== String(id)));
+  }
+  updateBadge();
+  renderCart();
+}
+
+document.getElementById('drawerItems')?.addEventListener('click', (event) => {
+  const btn = event.target.closest('button[data-action][data-id]');
+  if (!btn) return;
+  const id = btn.dataset.id;
+  const action = btn.dataset.action;
+  if (action === 'inc') changeQty(id, 1);
+  if (action === 'dec') changeQty(id, -1);
+  if (action === 'remove') removeItem(id);
+});
 
 document.getElementById('openCartBtn').addEventListener('click', () => {
   renderCart();
@@ -2187,28 +2232,28 @@ function wirePlaceholderInteractions() {
 
 /* ─── PRODUCTS ──────────────────────────────────────────── */
 const PRODUCTS = [
-  { id:1, name:'Noir Oversized Hoodie', category:'Hoodies', price:2499, badge:'New', badgeType:'',
+  { id:1, name:'Noir Oversized Hoodie', category:'Hoodies', price:1799, badge:'New', badgeType:'',
     image:'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=700&h=900&fit=crop&q=80',
     hoverImage:'https://images.unsplash.com/photo-1556821840-3a63f15732ce?w=700&h=900&fit=crop&q=80' },
-  { id:2, name:'Shadow Cargo Pant', category:'Bottoms', price:3299, badge:'', badgeType:'',
+  { id:2, name:'Shadow Cargo Pant', category:'Bottoms', price:1699, badge:'', badgeType:'',
     image:'https://images.unsplash.com/photo-1542272604-787c3835535d?w=700&h=900&fit=crop&q=80',
     hoverImage:'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=700&h=900&fit=crop&q=80' },
-  { id:3, name:'Void Overcoat', category:'Outerwear', price:5999, badge:'New', badgeType:'',
+  { id:3, name:'Void Overcoat', category:'Outerwear', price:2799, badge:'New', badgeType:'',
     image:'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=700&h=900&fit=crop&q=80',
     hoverImage:'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=700&h=900&fit=crop&q=80' },
-  { id:4, name:'Minimal Tee — White', category:'Essentials', price:999, badge:'Hot', badgeType:'red',
+  { id:4, name:'Minimal Tee — White', category:'Essentials', price:899, badge:'Hot', badgeType:'red',
     image:'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=700&h=900&fit=crop&q=80',
     hoverImage:'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=700&h=900&fit=crop&q=80' },
-  { id:5, name:'Urban Bomber Jacket', category:'Outerwear', price:4499, badge:'New', badgeType:'',
+  { id:5, name:'Urban Bomber Jacket', category:'Outerwear', price:2399, badge:'New', badgeType:'',
     image:'https://images.unsplash.com/photo-1485230895905-ec40ba36b9bc?w=700&h=900&fit=crop&q=80',
     hoverImage:'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=700&h=900&fit=crop&q=80' },
-  { id:6, name:'Street Fleece Jogger', category:'Bottoms', price:1999, badge:'', badgeType:'',
+  { id:6, name:'Street Fleece Jogger', category:'Bottoms', price:1499, badge:'', badgeType:'',
     image:'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=700&h=900&fit=crop&q=80',
     hoverImage:'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=700&h=900&fit=crop&q=80' },
-  { id:7, name:'Washed Graphic Tee', category:'Essentials', price:1299, badge:'', badgeType:'',
+  { id:7, name:'Washed Graphic Tee', category:'Essentials', price:999, badge:'', badgeType:'',
     image:'https://images.unsplash.com/photo-1503341504253-dff4815485f1?w=700&h=900&fit=crop&q=80',
     hoverImage:'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=700&h=900&fit=crop&q=80' },
-  { id:8, name:'Zen Pullover Hoodie', category:'Hoodies', price:2799, badge:'Featured', badgeType:'',
+  { id:8, name:'Zen Pullover Hoodie', category:'Hoodies', price:1899, badge:'Featured', badgeType:'',
     image:'https://images.unsplash.com/photo-1516826957135-700dedea698c?w=700&h=900&fit=crop&q=80',
     hoverImage:'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=700&h=900&fit=crop&q=80' },
 ];
