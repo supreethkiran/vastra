@@ -27,38 +27,41 @@ const DEFAULT_CONFIG = {
   appId: "YOUR_APP_ID"
 };
 
-const runtimeConfig = window.VASTRA_FIREBASE_CONFIG || {};
-const firebaseConfig = { ...DEFAULT_CONFIG, ...runtimeConfig };
-
 let db = null;
 let auth = null;
 let authUser = null;
+let appInitialized = false;
+let authObserverBound = false;
 const authListeners = new Set();
 
-function isConfigValid() {
+let resolveFirebaseReady = () => {};
+window.firebaseReady = new Promise((resolve) => {
+  resolveFirebaseReady = resolve;
+});
+
+let globalErrorLoggingBound = false;
+
+function getRuntimeFirebaseConfig() {
+  const runtimeConfig = window.VASTRA_FIREBASE_CONFIG || {};
+  const firebaseConfig = { ...DEFAULT_CONFIG, ...runtimeConfig };
+  console.log("[VASTRA] Config received:", firebaseConfig);
+  return firebaseConfig;
+}
+
+function isConfigValid(firebaseConfig) {
   return (
     firebaseConfig.apiKey &&
+    firebaseConfig.authDomain &&
     firebaseConfig.projectId &&
     firebaseConfig.apiKey !== DEFAULT_CONFIG.apiKey &&
+    firebaseConfig.authDomain !== DEFAULT_CONFIG.authDomain &&
     firebaseConfig.projectId !== DEFAULT_CONFIG.projectId
   );
 }
 
-try {
-  if (!isConfigValid()) {
-    throw new Error("Firebase config missing. Set window.VASTRA_FIREBASE_CONFIG before loading firebase-init.js");
-  }
-  const app = initializeApp(firebaseConfig);
-  db = getFirestore(app);
-  auth = getAuth(app);
-  window.db = db;
-  window.auth = auth;
-  console.log("[VASTRA] Firebase connected successfully");
-} catch (error) {
-  console.error("[VASTRA] Firebase initialization failed:", error.message);
-}
-
-if (auth) {
+function bindAuthObserverOnce() {
+  if (!auth || authObserverBound) return;
+  authObserverBound = true;
   onAuthStateChanged(auth, (user) => {
     authUser = user || null;
     if (authUser) {
@@ -75,6 +78,76 @@ if (auth) {
     });
   });
 }
+
+function initializeFirebaseRuntime(options = {}) {
+  if (appInitialized && db && auth) {
+    resolveFirebaseReady(true);
+    return true;
+  }
+  const { attempt = 0, maxAttempts = 20 } = options;
+  const firebaseConfig = getRuntimeFirebaseConfig();
+  if (!isConfigValid(firebaseConfig)) {
+    console.warn("[VASTRA] Firebase config not injected. Check window.VASTRA_FIREBASE_CONFIG placement in HTML.");
+    if (attempt < maxAttempts) {
+      window.setTimeout(() => initializeFirebaseRuntime({ attempt: attempt + 1, maxAttempts }), 150);
+    } else {
+      console.error("[VASTRA] Firebase initialization timed out due to missing/invalid config.");
+      resolveFirebaseReady(false);
+    }
+    return false;
+  }
+
+  try {
+    const app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+    auth = getAuth(app);
+    window.db = db;
+    window.auth = auth;
+    appInitialized = true;
+    bindAuthObserverOnce();
+    console.log("[VASTRA] Firebase app initialized successfully");
+    console.log("[VASTRA] Firebase Auth initialized", auth);
+    resolveFirebaseReady(true);
+    return true;
+  } catch (error) {
+    console.error("[VASTRA] Firebase initialization failed:", error.message);
+    resolveFirebaseReady(false);
+    return false;
+  }
+}
+
+function ensureAuthInitialized() {
+  if (!auth) {
+    throw new Error("Firebase Auth not initialized");
+  }
+  return auth;
+}
+
+async function ensureFirebaseReady() {
+  if (window.firebaseReady) {
+    const ready = await window.firebaseReady;
+    if (!ready) {
+      throw new Error("Firebase initialization failed. Check Firebase config and authorized domains.");
+    }
+  }
+}
+
+function normalizeAuthError(error) {
+  const code = String(error?.code || "");
+  const rawMessage = String(error?.message || "Authentication failed.");
+  if (code.includes("network-request-failed")) {
+    return "Auth request failed. Check internet and Firebase authDomain configuration.";
+  }
+  if (code.includes("invalid-api-key")) {
+    return "Invalid Firebase API key.";
+  }
+  if (code.includes("auth-domain-config-required")) {
+    return "Firebase authDomain is missing or invalid.";
+  }
+  return rawMessage;
+}
+
+initializeFirebaseRuntime();
 
 function toProduct(docSnap) {
   const data = docSnap.data() || {};
@@ -317,20 +390,41 @@ function subscribeAuth(callback) {
 }
 
 async function signUpWithEmail(email, password) {
-  if (!auth) throw new Error("Authentication unavailable");
-  const credential = await createUserWithEmailAndPassword(auth, String(email || "").trim(), String(password || ""));
-  return credential.user;
+  await ensureFirebaseReady();
+  const authInstance = ensureAuthInitialized();
+  try {
+    const credential = await createUserWithEmailAndPassword(
+      authInstance,
+      String(email || "").trim(),
+      String(password || "")
+    );
+    return credential.user;
+  } catch (error) {
+    console.error("[VASTRA] Signup failed", error);
+    throw new Error(normalizeAuthError(error));
+  }
 }
 
 async function signInWithEmail(email, password) {
-  if (!auth) throw new Error("Authentication unavailable");
-  const credential = await signInWithEmailAndPassword(auth, String(email || "").trim(), String(password || ""));
-  return credential.user;
+  await ensureFirebaseReady();
+  const authInstance = ensureAuthInitialized();
+  try {
+    const credential = await signInWithEmailAndPassword(
+      authInstance,
+      String(email || "").trim(),
+      String(password || "")
+    );
+    return credential.user;
+  } catch (error) {
+    console.error("[VASTRA] Signin failed", error);
+    throw new Error(normalizeAuthError(error));
+  }
 }
 
 async function signOutUser() {
-  if (!auth) throw new Error("Authentication unavailable");
-  await signOut(auth);
+  await ensureFirebaseReady();
+  const authInstance = ensureAuthInitialized();
+  await signOut(authInstance);
 }
 
 window.firebaseApi = {
@@ -353,9 +447,22 @@ window.firebaseApi = {
   getAdminDashboard
 };
 
-window.firebaseReady = Promise.resolve(Boolean(db && auth));
-
 if (typeof window !== "undefined") {
+  if (!globalErrorLoggingBound) {
+    globalErrorLoggingBound = true;
+    window.addEventListener("error", (event) => {
+      console.error("[VASTRA][global-error]", {
+        message: event.message,
+        source: event.filename,
+        line: event.lineno,
+        column: event.colno
+      });
+    });
+    window.addEventListener("unhandledrejection", (event) => {
+      console.error("[VASTRA][unhandled-rejection]", event.reason || event);
+    });
+  }
+
   const firePageView = () => {
     trackEvent("page_view", {
       path: window.location.pathname || "",

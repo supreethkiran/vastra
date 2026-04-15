@@ -59,6 +59,18 @@
     payBtn.querySelector("span").textContent = isLoading ? "Processing..." : "Pay Now";
   }
 
+  async function runWithSingleRetry(task, contextLabel) {
+    try {
+      return await task();
+    } catch (error) {
+      const message = String(error?.message || "");
+      const shouldRetry = /network|timeout|failed to fetch|temporarily unavailable/i.test(message);
+      if (!shouldRetry) throw error;
+      console.warn(`[VASTRA][checkout] retrying ${contextLabel} after transient failure`);
+      return task();
+    }
+  }
+
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     errorBox.textContent = "";
@@ -104,7 +116,10 @@
         path: window.location.pathname || ""
       });
       console.log("[VASTRA][checkout] creating server payment order");
-      const serverPaymentOrder = await global.firebaseApi.createPaymentOrder();
+      const serverPaymentOrder = await runWithSingleRetry(
+        () => global.firebaseApi.createPaymentOrder(),
+        "createPaymentOrder"
+      );
       console.log("[VASTRA][checkout] opening Razorpay checkout");
       const paymentResponse = await global.VastraPayment.startRazorpayPayment({
         keyId: serverPaymentOrder.key_id || serverPaymentOrder.keyId,
@@ -116,14 +131,18 @@
       });
 
       console.log("[VASTRA][checkout] finalizing paid order");
-      const orderId = await global.firebaseApi.finalizePaidOrder({
-        userInfo: userDetails,
-        payment: {
-          orderId: paymentResponse.razorpayOrderId || "",
-          paymentId: paymentResponse.paymentId || "",
-          signature: paymentResponse.signature || ""
-        }
-      });
+      const orderId = await runWithSingleRetry(
+        () =>
+          global.firebaseApi.finalizePaidOrder({
+            userInfo: userDetails,
+            payment: {
+              orderId: paymentResponse.razorpayOrderId || "",
+              paymentId: paymentResponse.paymentId || "",
+              signature: paymentResponse.signature || ""
+            }
+          }),
+        "finalizePaidOrder"
+      );
       global.firebaseApi.trackEvent?.("order_completed", {
         orderId,
         path: window.location.pathname || ""
