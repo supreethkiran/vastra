@@ -25,6 +25,8 @@
       --r: 0.5rem;
       --ease: cubic-bezier(0.16,1,0.3,1);
       --ease2: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      --t-fast: 0.22s;
+      --t-med: 0.34s;
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { scroll-behavior: smooth; }
@@ -33,6 +35,15 @@
       background: var(--bg);
       color: var(--text);
       overflow-x: hidden;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    body.page-enter { opacity: 0; transform: translateY(8px); }
+    body.page-leave { opacity: 0; transform: translateY(-8px); }
+    body.page-enter,
+    body.page-leave {
+      transition: opacity var(--t-med) var(--ease), transform var(--t-med) var(--ease);
     }
     a { color: inherit; text-decoration: none; }
     img { display: block; width: 100%; }
@@ -259,6 +270,12 @@
       max-width: 660px;
       position: relative;
       z-index: 2;
+      animation: heroCopyFloat 7s ease-in-out infinite;
+      will-change: transform;
+    }
+    @keyframes heroCopyFloat {
+      0%, 100% { transform: translate3d(0, 0, 0); }
+      50% { transform: translate3d(0, -4px, 0); }
     }
     .hero-visual {
       position: relative;
@@ -425,7 +442,7 @@
       display: inline-flex; align-items: center; gap: 10px;
       padding: 14px 30px; font-size: 10px;
       letter-spacing: 0.18em; text-transform: uppercase; font-weight: 600;
-      border: 1px solid; transition: all 0.4s var(--ease), transform 0.18s var(--ease);
+      border: 1px solid; transition: all var(--t-med) var(--ease), transform 0.18s var(--ease);
       position: relative; overflow: hidden;
     }
     .btn:active { transform: scale(0.97); }
@@ -520,6 +537,7 @@
     .cat-card {
       position: relative; overflow: hidden; aspect-ratio: 3/4;
       transform-style: preserve-3d;
+      border-radius: 14px;
     }
     .cat-card::after {
       content: ''; position: absolute; inset: 0;
@@ -565,7 +583,7 @@
     }
 
     /* PRODUCTS */
-    .products-section { padding: 20px 0 120px; }
+    .products-section { padding: 40px 0 140px; }
     .product-grid {
       display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
     }
@@ -573,6 +591,8 @@
       position: relative; background: var(--surface);
       transition: transform 0.5s var(--ease), box-shadow 0.5s;
       transform-style: preserve-3d;
+      border-radius: 14px;
+      overflow: hidden;
     }
     .product-card:hover {
       transform: translateY(-6px) rotateX(2deg);
@@ -604,7 +624,8 @@
       padding: 14px; transform: translateY(100%);
       transition: transform 0.45s var(--ease); z-index: 3;
     }
-    .product-card:hover .product-quick-add { transform: translateY(0); }
+    .product-card:hover .product-quick-add,
+    .product-card:focus-within .product-quick-add { transform: translateY(0); }
     .quick-add-btn {
       width: 100%; background: var(--gold); border: none; color: #060608;
       font-family: 'DM Sans', sans-serif;
@@ -697,7 +718,7 @@
     .spec span { color: var(--gold); font-weight: 500; }
 
     /* BRAND STORY */
-    .split-section { padding: 100px 0; }
+    .split-section { padding: 120px 0; }
     .split-grid {
       display: grid; grid-template-columns: 1fr 1fr;
       gap: 64px; align-items: center;
@@ -763,6 +784,7 @@
       border: 1px solid var(--border);
       padding: 22px 20px;
       transition: transform 0.35s var(--ease), border-color 0.35s;
+      border-radius: 14px;
     }
     .why-card:hover { transform: translateY(-4px); border-color: rgba(194,168,120,0.42); }
     .why-icon {
@@ -787,6 +809,7 @@
       border: 1px solid var(--border);
       position: relative; overflow: hidden;
       transition: border-color 0.4s, transform 0.4s var(--ease);
+      border-radius: 14px;
     }
     .testimonial-card:hover { border-color: rgba(201,169,110,0.3); transform: translateY(-4px); }
     .testimonial-card::before {
@@ -801,7 +824,7 @@
     /* JOURNAL */
     .journal-section { padding: 80px 0 100px; }
     .journal-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 16px; }
-    .journal-card { position: relative; overflow: hidden; transition: transform 0.4s var(--ease); }
+    .journal-card { position: relative; overflow: hidden; transition: transform 0.4s var(--ease); border-radius: 14px; }
     .journal-card:hover { transform: translateY(-4px); }
     .journal-card-img { width: 100%; height: 400px; object-fit: cover; transition: transform 0.9s var(--ease); }
     .journal-card:first-child .journal-card-img { height: 520px; }
@@ -827,7 +850,7 @@
       background: linear-gradient(180deg, transparent, var(--gold-dim), transparent);
       border-top: 1px solid var(--border);
     }
-    .newsletter-inner { max-width: 680px; }
+    .newsletter-inner { max-width: 680px; border-radius: 16px; }
     .newsletter-title { font-family:'Bebas Neue',sans-serif; font-size:clamp(40px,5vw,60px); letter-spacing:0.06em; margin-bottom:12px; }
     .newsletter-sub { font-size:13px; color:var(--muted); line-height:1.7; margin-bottom:28px; font-weight:300; }
     .newsletter-form { display: flex; }
@@ -1052,7 +1075,7 @@
         padding: 96px 0 24px;
         gap: 22px;
       }
-      .hero-copy { max-width: 100%; }
+      .hero-copy { max-width: 100%; animation-duration: 9s; }
       .hero-title { font-size: clamp(52px, 16vw, 86px); line-height: 0.94; }
       .hero-sub { max-width: 100%; }
       .hero-cta { flex-wrap: wrap; margin-top: 26px; }
@@ -1082,6 +1105,11 @@
       .why-grid { grid-template-columns: 1fr; }
       .spotlight-tag { display: none; }
       .journal-grid { grid-template-columns: 1fr; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .hero-copy { animation: none; }
+      .reveal { transition: none; }
+      .btn, .product-card, .cat-card, .journal-card { transition: none; }
     }
   </style>
 </head>
@@ -1857,6 +1885,7 @@ function get3DProfile() {
 
 /* ─── 3D PRODUCT CARD TILT ──────────────────────────────── */
 function initCardTilt() {
+  if (window.matchMedia('(hover: none), (pointer: coarse)').matches) return;
   document.querySelectorAll('.product-card').forEach(card => {
     card.addEventListener('mousemove', e => {
       const rect = card.getBoundingClientRect();
@@ -1872,6 +1901,7 @@ function initCardTilt() {
 
 /* ─── SPOTLIGHT PARALLAX ────────────────────────────────── */
 function initSpotlightTilt() {
+  if (window.matchMedia('(hover: none), (pointer: coarse)').matches) return;
   const wrap = document.getElementById('spotlightWrap');
   if (!wrap) return;
   wrap.parentElement.addEventListener('mousemove', e => {
@@ -1889,6 +1919,7 @@ function initSpotlightTilt() {
 
 /* ─── CATEGORY 3D TILT ──────────────────────────────────── */
 function initCatTilt() {
+  if (window.matchMedia('(hover: none), (pointer: coarse)').matches) return;
   document.querySelectorAll('.cat-card').forEach(card => {
     card.addEventListener('mousemove', e => {
       const rect = card.getBoundingClientRect();
@@ -2181,6 +2212,27 @@ initSpotlightTilt();
 initCatTilt();
 updateBadge();
 wirePlaceholderInteractions();
+
+/* ─── PAGE TRANSITION ───────────────────────────────────── */
+(function initPageTransitions() {
+  document.body.classList.add('page-enter');
+  requestAnimationFrame(() => document.body.classList.remove('page-enter'));
+  document.querySelectorAll('a[href]').forEach(link => {
+    link.addEventListener('click', (event) => {
+      const href = link.getAttribute('href') || '';
+      if (!href || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:')) return;
+      if (link.target === '_blank' || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      const url = new URL(href, window.location.href);
+      if (url.origin !== window.location.origin) return;
+      if (url.pathname === window.location.pathname && url.search === window.location.search) return;
+      event.preventDefault();
+      document.body.classList.add('page-leave');
+      window.setTimeout(() => {
+        window.location.href = url.href;
+      }, 170);
+    });
+  });
+})();
 </script>
 </body>
 </html>
