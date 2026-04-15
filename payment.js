@@ -13,11 +13,11 @@
 
       const options = {
         key: payload.keyId,
-        amount: Number(payload.order.amount || 0),
-        currency: "INR",
+        amount: Number(payload.amount || payload.order?.amount || 0),
+        currency: payload.currency || payload.order?.currency || "INR",
         name: "VASTRA",
         description: "Order Payment",
-        order_id: payload.order.id,
+        order_id: payload.orderId || payload.order?.id,
         prefill: {
           name: payload.customer.name,
           email: payload.customer.email,

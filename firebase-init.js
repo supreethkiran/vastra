@@ -219,6 +219,9 @@ async function createPaymentOrder() {
 async function finalizePaidOrder(orderInput) {
   const payload = {
     userInfo: orderInput.userInfo || {},
+    razorpay_order_id: orderInput.payment?.orderId || "",
+    razorpay_payment_id: orderInput.payment?.paymentId || "",
+    razorpay_signature: orderInput.payment?.signature || "",
     payment: {
       orderId: orderInput.payment?.orderId || "",
       paymentId: orderInput.payment?.paymentId || "",

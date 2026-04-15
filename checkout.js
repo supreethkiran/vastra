@@ -107,7 +107,10 @@
       const serverPaymentOrder = await global.firebaseApi.createPaymentOrder();
       console.log("[VASTRA][checkout] opening Razorpay checkout");
       const paymentResponse = await global.VastraPayment.startRazorpayPayment({
-        keyId: serverPaymentOrder.keyId,
+        keyId: serverPaymentOrder.key_id || serverPaymentOrder.keyId,
+        orderId: serverPaymentOrder.razorpay_order_id,
+        amount: serverPaymentOrder.amount,
+        currency: serverPaymentOrder.currency || "INR",
         order: serverPaymentOrder.order,
         customer: userDetails
       });

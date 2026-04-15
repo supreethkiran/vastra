@@ -111,6 +111,10 @@ router.post("/create-payment-order", requireFirebaseAuth, async (req, res, next)
 
     return res.json({
       keyId: process.env.RAZORPAY_KEY_ID,
+      key_id: process.env.RAZORPAY_KEY_ID,
+      razorpay_order_id: order.id,
+      amount: Number(order.amount || 0),
+      currency: order.currency || "INR",
       order,
       cartPreview: {
         total,
@@ -126,9 +130,9 @@ router.post("/finalize-order", requireFirebaseAuth, async (req, res, next) => {
   try {
     const uid = req.firebaseUser.uid;
     const { userInfo, payment } = req.body;
-    const razorpayOrderId = payment?.orderId || "";
-    const paymentId = payment?.paymentId || "";
-    const signature = payment?.signature || "";
+    const razorpayOrderId = req.body.razorpay_order_id || payment?.orderId || "";
+    const paymentId = req.body.razorpay_payment_id || payment?.paymentId || "";
+    const signature = req.body.razorpay_signature || payment?.signature || "";
 
     if (!razorpayOrderId || !paymentId || !signature) {
       return res.status(400).json({ message: "Missing payment verification fields." });
