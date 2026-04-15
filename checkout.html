@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VASTRA - Checkout</title>
+  <style>
+    :root {
+      --bg: #060608;
+      --surface: #101118;
+      --surface-2: #171925;
+      --text: #f0ece4;
+      --muted: rgba(240, 236, 228, 0.65);
+      --gold: #c9a96e;
+      --border: rgba(255, 255, 255, 0.1);
+      --danger: #ff5f6d;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    .container { max-width: 1120px; margin: 0 auto; padding: 30px 20px 60px; }
+    .heading { font-size: 28px; margin-bottom: 18px; }
+    .layout { display: grid; grid-template-columns: 1fr 360px; gap: 20px; align-items: start; }
+    .card { background: var(--surface); border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 16px 35px rgba(0, 0, 0, 0.3); padding: 18px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-grid .full { grid-column: span 2; }
+    label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+    input, textarea {
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text);
+      padding: 12px;
+      outline: none;
+    }
+    textarea { min-height: 90px; resize: vertical; }
+    .summary-item { display: grid; grid-template-columns: 54px 1fr auto; gap: 10px; align-items: center; margin-bottom: 12px; }
+    .summary-items { margin-top: 14px; }
+    .summary-item img { width: 54px; height: 60px; object-fit: cover; border-radius: 8px; }
+    .summary-item p { font-size: 14px; margin-bottom: 4px; }
+    .summary-item small { color: var(--muted); }
+    .summary-item strong { font-size: 14px; }
+    .row { display: flex; justify-content: space-between; margin-top: 10px; color: var(--muted); }
+    .row.total { color: var(--text); font-weight: 700; font-size: 18px; margin-top: 16px; }
+    .pay-btn {
+      width: 100%;
+      margin-top: 16px;
+      border: 0;
+      border-radius: 12px;
+      padding: 14px;
+      background: var(--gold);
+      color: #111;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+    }
+    .loader {
+      display: none;
+      width: 15px;
+      height: 15px;
+      border: 2px solid rgba(0, 0, 0, 0.25);
+      border-top-color: #111;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    .error { color: var(--danger); font-size: 13px; margin-top: 10px; min-height: 18px; }
+    .muted { color: var(--muted); }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      .form-grid { grid-template-columns: 1fr; }
+      .form-grid .full { grid-column: span 1; }
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <h1 class="heading">Checkout</h1>
+    <div class="layout">
+      <section class="card">
+        <form id="checkoutForm" novalidate>
+          <div class="form-grid">
+            <div>
+              <label for="name">Full Name</label>
+              <input id="name" name="name" type="text" required>
+            </div>
+            <div>
+              <label for="email">Email</label>
+              <input id="email" name="email" type="email" required>
+            </div>
+            <div>
+              <label for="phone">Phone Number</label>
+              <input id="phone" name="phone" type="tel" required>
+            </div>
+            <div>
+              <label for="cityPincode">City / Pincode</label>
+              <input id="cityPincode" name="cityPincode" type="text" required>
+            </div>
+            <div class="full">
+              <label for="address">Address</label>
+              <textarea id="address" name="address" required></textarea>
+            </div>
+          </div>
+          <button id="payNowBtn" class="pay-btn" type="submit">
+            <div id="checkoutLoader" class="loader"></div>
+            <span>Pay Now</span>
+          </button>
+          <p id="checkoutError" class="error"></p>
+        </form>
+      </section>
+
+      <aside class="card">
+        <h2>Order Summary</h2>
+        <div id="checkoutItems" class="summary-items"></div>
+        <div class="row"><span>Subtotal</span><strong id="checkoutSubtotal">₹0</strong></div>
+        <div class="row"><span>Shipping</span><strong>Free</strong></div>
+        <div class="row total"><span>Total</span><strong id="checkoutTotal">₹0</strong></div>
+      </aside>
+    </div>
+  </main>
+
+  <script src="./js/cart.js"></script>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="./js/payment.js"></script>
+  <script src="./js/firebase.js"></script>
+  <script src="./js/checkout.js"></script>
+</body>
+</html>

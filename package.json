@@ -1,0 +1,21 @@
+{
+  "name": "vastra-fullstack",
+  "version": "1.0.0",
+  "private": true,
+  "description": "VASTRA e-commerce full-stack application",
+  "scripts": {
+    "dev": "node backend/src/server.js",
+    "start": "node backend/src/server.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "razorpay": "^2.9.4",
+    "uuid": "^11.1.0"
+  }
+}

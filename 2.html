@@ -1,0 +1,575 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VASTRA — Product Details</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;700&family=Cormorant+Garamond:ital,wght@0,300;1,300&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <style>
+    :root {
+      --bg: #060608;
+      --surface: #0d0d10;
+      --surface2: #13131a;
+      --border: rgba(255,255,255,0.07);
+      --text: #f0ece4;
+      --muted: rgba(240,236,228,0.42);
+      --gold: #c9a96e;
+      --gold2: #e8c98a;
+      --gold-dim: rgba(201,169,110,0.12);
+      --ease: cubic-bezier(0.16,1,0.3,1);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh;
+    }
+    a { color: inherit; text-decoration: none; }
+    img { display: block; width: 100%; }
+    button { font-family: inherit; }
+
+
+    canvas#bg3d { position:fixed;inset:0;z-index:0;pointer-events:none; }
+    body::before { content:'';position:fixed;inset:0;z-index:1;pointer-events:none;opacity:0.03;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+
+    .page { position:relative;z-index:10; }
+
+    .topbar {
+      position: sticky; top: 0; z-index: 200;
+      background: rgba(6,6,8,0.9);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(20px);
+      padding: 0 32px; height: 64px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .brand {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 26px; letter-spacing: 0.2em;
+      background: linear-gradient(135deg, var(--text), var(--gold));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .back-link {
+      font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--gold); border-bottom: 1px solid rgba(201,169,110,0.35);
+      padding-bottom: 2px; transition: opacity 0.3s; display: flex; align-items: center; gap: 6px;
+    }
+    .back-link:hover { opacity: 0.7; }
+
+    .wrap { max-width: 1240px; margin: 0 auto; padding: 0 32px; }
+
+    .layout {
+      display: grid; grid-template-columns: 1.15fr 0.85fr;
+      gap: 48px; align-items: start;
+      padding: 52px 0 80px;
+    }
+
+    /* GALLERY */
+    .gallery { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .gallery-item {
+      position: relative; overflow: hidden;
+      aspect-ratio: 4/5; border: 1px solid var(--border);
+      background: var(--surface);
+      cursor: pointer;
+      transition: border-color 0.4s;
+    }
+    .gallery-item:first-child { grid-column: span 2; aspect-ratio: 16/10; }
+    .gallery-item:hover { border-color: rgba(201,169,110,0.35); }
+    .gallery-item img {
+      width: 100%; height: 100%; object-fit: cover;
+      transition: transform 0.9s var(--ease);
+    }
+    .gallery-item:hover img { transform: scale(1.05); }
+    .product-viewer { position: relative; width: 100%; height: 100%; background: var(--surface2); }
+    .viewer-loading {
+      position: absolute; inset: 0; z-index: 3;
+      display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(150deg, rgba(255,255,255,0.02), rgba(255,255,255,0));
+      transition: opacity 0.3s;
+    }
+    .viewer-loading.hide { opacity: 0; pointer-events: none; }
+    .viewer-spinner {
+      width: 34px; height: 34px; border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.2); border-top-color: var(--gold);
+      animation: spin 0.9s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .viewer-fallback {
+      position: absolute; inset: 0; z-index: 1;
+      width: 100%; height: 100%; object-fit: cover;
+      opacity: 1; transition: opacity 0.35s var(--ease);
+    }
+    .viewer-fallback.hide { opacity: 0; }
+    model-viewer.product-model {
+      width: 100%; height: 100%;
+      background: radial-gradient(circle at 50% 40%, rgba(194,168,120,0.15), transparent 65%);
+      opacity: 0; transition: opacity 0.35s var(--ease);
+      --poster-color: transparent;
+      z-index: 2;
+    }
+    model-viewer.product-model.show { opacity: 1; }
+    .gallery-item-shine {
+      position: absolute; inset: 0; pointer-events: none;
+      background: linear-gradient(135deg, rgba(255,255,255,0.06) 0%, transparent 50%);
+      opacity: 0; transition: opacity 0.4s;
+    }
+    .gallery-item:hover .gallery-item-shine { opacity: 1; }
+
+    /* PANEL */
+    .panel {
+      position: sticky; top: 80px;
+      background: linear-gradient(160deg, rgba(255,255,255,0.025), rgba(255,255,255,0.01));
+      border: 1px solid var(--border);
+      padding: 36px;
+    }
+    .cat { color: var(--gold); font-size: 9px; letter-spacing: 0.24em; text-transform: uppercase; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+    .cat::before { content:''; width:16px; height:1px; background:var(--gold); }
+    .name {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(48px, 6vw, 76px);
+      letter-spacing: 0.03em; line-height: 0.92;
+      color: var(--text); margin-bottom: 14px;
+    }
+    .price {
+      font-size: 30px; color: var(--gold); margin-bottom: 20px;
+      font-weight: 300; letter-spacing: 0.02em;
+    }
+    .desc { color: var(--muted); margin-bottom: 24px; font-size: 13px; line-height: 1.85; font-weight: 300; }
+    .meta {
+      border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+      padding: 16px 0; margin-bottom: 24px;
+      display: grid; gap: 10px; font-size: 12px;
+    }
+    .meta-row { display: flex; justify-content: space-between; color: var(--muted); }
+    .meta-row span { color: var(--text); }
+
+    /* SIZE SELECTOR */
+    .size-label { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+    .size-grid { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; }
+    .size-btn {
+      width: 48px; height: 48px; border: 1px solid var(--border);
+      background: var(--surface2); color: var(--muted); font-size: 12px; font-weight: 500;
+      transition: all 0.3s;
+    }
+    .size-btn:hover, .size-btn.active { border-color: var(--gold); color: var(--gold); background: var(--gold-dim); }
+
+    /* QTY */
+    .qty-row { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+    .qty-label { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); min-width: 48px; }
+    .qty-ctrl { display: flex; align-items: center; }
+    .qty-btn {
+      width: 38px; height: 38px; background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text); font-size: 18px;
+      display: flex; align-items: center; justify-content: center;
+      transition: border-color 0.3s, color 0.3s;
+    }
+    .qty-btn:hover { border-color: var(--gold); color: var(--gold); }
+    .qty-val { width: 48px; text-align: center; font-size: 14px; font-weight: 500; }
+
+    /* CTA */
+    .cta-stack { display: flex; flex-direction: column; gap: 10px; }
+    .btn-primary {
+      width: 100%; background: var(--gold); border: 1px solid var(--gold);
+      padding: 18px; color: #060608;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 800;
+      transition: background 0.3s; position: relative; overflow: hidden;
+    }
+    .btn-primary::before { content:''; position:absolute;inset:0;background:rgba(0,0,0,0.15);transform:translateX(-101%);transition:transform 0.4s var(--ease); }
+    .btn-primary:hover::before { transform:translateX(0); }
+    .btn-secondary {
+      width: 100%; background: transparent; border: 1px solid var(--border);
+      padding: 17px; color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 600;
+      transition: border-color 0.3s, color 0.3s;
+    }
+    .btn-secondary:hover { border-color: var(--gold); color: var(--gold); }
+
+    /* FEATURES */
+    .features { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 24px; }
+    .feature-item {
+      padding: 14px; background: var(--surface2); border: 1px solid var(--border);
+      font-size: 11px; color: var(--muted); text-align: center; letter-spacing: 0.05em;
+    }
+    .feature-item strong { display: block; color: var(--text); font-size: 16px; margin-bottom: 4px; }
+
+    /* RELATED */
+    .related-section { padding: 60px 0 100px; border-top: 1px solid var(--border); }
+    .related-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+    .related-card {
+      background: var(--surface); transition: transform 0.4s var(--ease), box-shadow 0.4s;
+      position: relative;
+    }
+    .related-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+    .related-img { aspect-ratio: 3/4; overflow: hidden; }
+    .related-img img { width:100%;height:100%;object-fit:cover;transition:transform 0.8s var(--ease); }
+    .related-card:hover .related-img img { transform: scale(1.06); }
+    .related-info { padding: 12px 0 4px; }
+    .related-name { font-size: 12px; color: var(--text); }
+    .related-price { font-size: 12px; color: var(--gold); margin-top: 4px; }
+
+    /* SEC HEADER */
+    .sec-label {
+      font-size: 9px; letter-spacing: 0.3em; text-transform: uppercase;
+      color: var(--gold); font-weight: 600; margin-bottom: 10px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .sec-label::before { content:''; width:20px; height:1px; background:var(--gold); }
+    .sec-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(36px, 4vw, 52px); letter-spacing: 0.04em; color: var(--text);
+    }
+    .sec-head { margin-bottom: 32px; }
+
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      .panel { position: static; }
+      .topbar { padding: 0 20px; }
+      .wrap { padding: 0 20px; }
+      .related-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 600px) {
+      .gallery { grid-template-columns: 1fr; }
+      .gallery-item:first-child { grid-column: span 1; }
+      .gallery-item:first-child { aspect-ratio: 4/5; }
+    }
+  </style>
+</head>
+<body>
+<canvas id="bg3d"></canvas>
+
+<div class="page">
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <a href="1.html" class="brand">VASTRA</a>
+    <a href="1.html" class="back-link">← Back to Shop</a>
+  </header>
+
+  <div class="wrap">
+    <div class="layout">
+      <!-- GALLERY -->
+      <div class="gallery" id="gallery">
+        <div class="gallery-item">
+          <div class="product-viewer" id="productViewer">
+            <div class="viewer-loading" id="viewerLoading"><div class="viewer-spinner"></div></div>
+            <img id="mainImg" class="viewer-fallback" src="https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=1200&h=750&fit=crop&q=80" alt="">
+            <model-viewer
+              id="modelViewer"
+              class="product-model"
+              alt="3D product preview"
+              camera-controls
+              touch-action="pan-y"
+              interaction-prompt="auto"
+              auto-rotate
+              rotation-per-second="20deg"
+              loading="lazy"
+              shadow-intensity="0.9"
+              exposure="1.0">
+            </model-viewer>
+          </div>
+          <div class="gallery-item-shine"></div>
+        </div>
+        <div class="gallery-item">
+          <img id="thumbImg1" src="https://images.unsplash.com/photo-1556821840-3a63f15732ce?w=600&h=750&fit=crop&q=80" alt="">
+          <div class="gallery-item-shine"></div>
+        </div>
+        <div class="gallery-item">
+          <img id="thumbImg2" src="https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600&h=750&fit=crop&q=80" alt="">
+          <div class="gallery-item-shine"></div>
+        </div>
+      </div>
+
+      <!-- PURCHASE PANEL -->
+      <div class="panel">
+        <p class="cat">Hoodies</p>
+        <h1 class="name" id="productName">Noir Oversized<br>Hoodie</h1>
+        <div class="price" id="productPrice">₹2,499</div>
+        <p class="desc" id="productDesc">
+          Heavyweight 480GSM fleece with a garment-washed finish for that perfectly broken-in feel. Dropped shoulders, ribbed cuffs, kangaroo pocket. Made to outlast every season.
+        </p>
+        <div class="meta">
+          <div class="meta-row"><span>Fabric</span> 480GSM Fleece Cotton</div>
+          <div class="meta-row"><span>Fit</span> Oversized Drop Shoulder</div>
+          <div class="meta-row"><span>Origin</span> Made in India</div>
+          <div class="meta-row"><span>SKU</span> VST-HOD-001-BLK</div>
+        </div>
+
+        <p class="size-label">Select Size</p>
+        <div class="size-grid" id="sizeGrid">
+          <button class="size-btn" onclick="selectSize(this)">XS</button>
+          <button class="size-btn" onclick="selectSize(this)">S</button>
+          <button class="size-btn active" onclick="selectSize(this)">M</button>
+          <button class="size-btn" onclick="selectSize(this)">L</button>
+          <button class="size-btn" onclick="selectSize(this)">XL</button>
+          <button class="size-btn" onclick="selectSize(this)">XXL</button>
+        </div>
+
+        <div class="qty-row">
+          <span class="qty-label">Qty</span>
+          <div class="qty-ctrl">
+            <button class="qty-btn" id="qDec">−</button>
+            <span class="qty-val" id="qVal">1</span>
+            <button class="qty-btn" id="qInc">+</button>
+          </div>
+        </div>
+
+        <div class="cta-stack">
+          <button class="btn-primary" id="addBtn">Add to Cart</button>
+          <button class="btn-secondary" id="goToCartBtn">Go to Cart</button>
+        </div>
+
+        <div class="features">
+          <div class="feature-item"><strong>🚚</strong>Free Shipping</div>
+          <div class="feature-item"><strong>↩</strong>14-Day Returns</div>
+          <div class="feature-item"><strong>🔒</strong>Secure Pay</div>
+          <div class="feature-item"><strong>✦</strong>COD Available</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RELATED PRODUCTS -->
+  <section class="related-section">
+    <div class="wrap">
+      <div class="sec-head">
+        <p class="sec-label">You may also like</p>
+        <h2 class="sec-title">Complete the Look</h2>
+      </div>
+      <div class="related-grid">
+        <a href="#" class="related-card">
+          <div class="related-img"><img src="https://images.unsplash.com/photo-1542272604-787c3835535d?w=400&h=530&fit=crop&q=80" alt="Cargo"></div>
+          <div class="related-info"><div class="related-name">Shadow Cargo Pant</div><div class="related-price">₹3,299</div></div>
+        </a>
+        <a href="#" class="related-card">
+          <div class="related-img"><img src="https://images.unsplash.com/photo-1551028719-00167b16eac5?w=400&h=530&fit=crop&q=80" alt="Coat"></div>
+          <div class="related-info"><div class="related-name">Void Overcoat</div><div class="related-price">₹5,999</div></div>
+        </a>
+        <a href="#" class="related-card">
+          <div class="related-img"><img src="https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&h=530&fit=crop&q=80" alt="Tee"></div>
+          <div class="related-info"><div class="related-name">Minimal Tee — White</div><div class="related-price">₹999</div></div>
+        </a>
+        <a href="#" class="related-card">
+          <div class="related-img"><img src="https://images.unsplash.com/photo-1485230895905-ec40ba36b9bc?w=400&h=530&fit=crop&q=80" alt="Bomber"></div>
+          <div class="related-info"><div class="related-name">Urban Bomber Jacket</div><div class="related-price">₹4,499</div></div>
+        </a>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- TOAST -->
+<div style="position:fixed;bottom:32px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--surface2);border:1px solid var(--gold);padding:12px 28px;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);z-index:9000;opacity:0;transition:all 0.4s var(--ease);white-space:nowrap;backdrop-filter:blur(12px);" id="toast"></div>
+
+<script src="./js/cart.js"></script>
+<script>
+/* 3D BG */
+(function(){
+  if(!window.THREE||window.innerWidth<600)return;
+  const canvas=document.getElementById('bg3d');
+  const scene=new THREE.Scene();
+  const camera=new THREE.PerspectiveCamera(50,window.innerWidth/window.innerHeight,0.1,100);
+  camera.position.z=18;
+  const renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,1.8));
+  renderer.setSize(window.innerWidth,window.innerHeight);
+  renderer.toneMapping=THREE.ACESFilmicToneMapping;
+
+  // Particles
+  const N=600;const pg=new THREE.BufferGeometry();
+  const pos=new Float32Array(N*3),col=new Float32Array(N*3);
+  for(let i=0;i<N;i++){
+    pos[i*3]=(Math.random()-.5)*60;pos[i*3+1]=(Math.random()-.5)*60;pos[i*3+2]=(Math.random()-.5)*40;
+    const g=Math.random()<0.6;
+    col[i*3]=g?0.788:0.29;col[i*3+1]=g?0.663:0.94;col[i*3+2]=g?0.431:0.831;
+  }
+  pg.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  pg.setAttribute('color',new THREE.BufferAttribute(col,3));
+  const pts=new THREE.Points(pg,new THREE.PointsMaterial({size:0.1,vertexColors:true,transparent:true,opacity:0.4}));
+  scene.add(pts);
+
+  // Ring geometry
+  const r1=new THREE.Mesh(new THREE.TorusGeometry(5,0.05,16,120),new THREE.MeshPhysicalMaterial({color:0xc9a96e,metalness:1,roughness:0,transparent:true,opacity:0.4}));
+  r1.position.set(8,3,-6);r1.rotation.x=Math.PI/4;scene.add(r1);
+  const r2=new THREE.Mesh(new THREE.TorusGeometry(3.2,0.04,16,80),new THREE.MeshPhysicalMaterial({color:0x4af0d4,metalness:1,roughness:0,transparent:true,opacity:0.3}));
+  r2.position.set(-8,-4,-4);r2.rotation.y=Math.PI/3;scene.add(r2);
+
+  // Floating octahedron
+  const oct=new THREE.Mesh(new THREE.OctahedronGeometry(2),new THREE.MeshPhysicalMaterial({color:0xc9a96e,metalness:0.9,roughness:0.05,transparent:true,opacity:0.15}));
+  oct.position.set(10,-2,-6);scene.add(oct);
+  const octW=new THREE.Mesh(new THREE.OctahedronGeometry(2),new THREE.MeshBasicMaterial({color:0xc9a96e,wireframe:true,transparent:true,opacity:0.18}));
+  octW.position.copy(oct.position);scene.add(octW);
+
+  scene.add(new THREE.AmbientLight(0x111122,1));
+  const kl=new THREE.PointLight(0xc9a96e,4,60);kl.position.set(6,4,10);scene.add(kl);
+  const fl=new THREE.PointLight(0x4af0d4,2,40);fl.position.set(-8,-3,8);scene.add(fl);
+
+  let pmx=0,pmy=0,cx=0,cy=0;
+  document.addEventListener('mousemove',e=>{pmx=(e.clientX/window.innerWidth-.5)*2;pmy=(e.clientY/window.innerHeight-.5)*2;});
+  window.addEventListener('resize',()=>{camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth,window.innerHeight);});
+
+  function anim(t){
+    const ti=t*0.0003;
+    cx+=(pmx*1.2-cx)*0.04;cy+=(-pmy*0.8-cy)*0.04;
+    camera.position.x=cx;camera.position.y=cy;camera.lookAt(0,0,0);
+    r1.rotation.z=ti*0.5;r2.rotation.x=ti*0.7;
+    oct.rotation.y=ti*1.2;oct.rotation.x=ti*0.8;
+    octW.rotation.copy(oct.rotation);
+    pts.rotation.y=ti*0.06;
+    kl.intensity=3.5+Math.sin(ti*4)*1.2;
+    renderer.render(scene,camera);requestAnimationFrame(anim);
+  }
+  requestAnimationFrame(anim);
+})();
+
+/* SIZE SELECTOR */
+window.selectSize=function(btn){
+  document.querySelectorAll('.size-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+};
+
+/* QTY */
+let qty=1;
+document.getElementById('qDec').addEventListener('click',()=>{if(qty>1){qty--;document.getElementById('qVal').textContent=qty;}});
+document.getElementById('qInc').addEventListener('click',()=>{qty++;document.getElementById('qVal').textContent=qty;});
+
+/* ADD TO CART */
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.style.opacity='1';t.style.transform='translateX(-50%) translateY(0)';
+  setTimeout(()=>{t.style.opacity='0';t.style.transform='translateX(-50%) translateY(20px)';},2800);
+}
+document.getElementById('addBtn').addEventListener('click',()=>{
+  const cleanName=document.getElementById('productName').textContent.replace('\n',' ');
+  const size=document.querySelector('.size-btn.active')?.textContent||'M';
+  const numericPrice=Number((document.getElementById('productPrice').textContent || '').replace(/[^\d]/g,'')) || product.price;
+  const item = {
+    id: `${product.id}-${size}`,
+    name: `${cleanName} (${size})`,
+    price: numericPrice,
+    image: product.img
+  };
+  window.VastraCart.addToCart(item, qty);
+  showToast(`${cleanName} (${size}) × ${qty} added to cart`);
+});
+document.getElementById('goToCartBtn').addEventListener('click',()=>{
+  window.location.href='./cart.html';
+});
+document.querySelectorAll('a[href="#"]').forEach(link=>{
+  link.addEventListener('click',e=>{
+    e.preventDefault();
+    showToast('More product links coming soon');
+  });
+});
+
+/* GALLERY TILT */
+document.querySelectorAll('.gallery-item').forEach(item=>{
+  item.addEventListener('mousemove',e=>{
+    const r=item.getBoundingClientRect();
+    const x=(e.clientX-r.left)/r.width-.5;
+    const y=(e.clientY-r.top)/r.height-.5;
+    item.style.transform=`perspective(800px) rotateX(${-y*6}deg) rotateY(${x*6}deg)`;
+  });
+  item.addEventListener('mouseleave',()=>{item.style.transform='';item.style.transition='transform 0.6s var(--ease)';});
+});
+
+/* LOAD PRODUCT FROM URL */
+const PRODUCTS=[
+  {id:1,name:'Noir Oversized\nHoodie',cat:'Hoodies',price:2499,desc:'Heavyweight 480GSM fleece with a garment-washed finish. Dropped shoulders, ribbed cuffs, kangaroo pocket. Made to outlast every season.',img:'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=1200&h=750&fit=crop&q=80',thumb1:'https://images.unsplash.com/photo-1556821840-3a63f15732ce?w=600&h=750&fit=crop&q=80',thumb2:'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600&h=750&fit=crop&q=80',model:'https://modelviewer.dev/shared-assets/models/Astronaut.glb'},
+  {id:2,name:'Shadow Cargo\nPant',cat:'Bottoms',price:3299,desc:'6-pocket utility cargo with adjustable ankle straps and deep side pockets. Technical twill that moves with you.',img:'https://images.unsplash.com/photo-1542272604-787c3835535d?w=1200&h=750&fit=crop&q=80',thumb1:'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=600&h=750&fit=crop&q=80',thumb2:'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=600&h=750&fit=crop&q=80',model:'https://modelviewer.dev/shared-assets/models/Astronaut.glb'},
+  {id:3,name:'Void\nOvercoat',cat:'Outerwear',price:5999,desc:'Long-line structured overcoat in a heavyweight wool-blend. Single-button closure, notch lapels. The defining piece of any wardrobe.',img:'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=1200&h=750&fit=crop&q=80',thumb1:'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=600&h=750&fit=crop&q=80',thumb2:'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=600&h=750&fit=crop&q=80',model:'https://modelviewer.dev/shared-assets/models/Astronaut.glb'},
+  {id:4,name:'Minimal Tee\nWhite',cat:'Essentials',price:999,desc:'240GSM Supima cotton with a soft hand feel. Slightly boxy fit with clean seams. The perfect blank canvas.',img:'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=1200&h=750&fit=crop&q=80',thumb1:'https://images.unsplash.com/photo-1516826957135-700dedea698c?w=600&h=750&fit=crop&q=80',thumb2:'https://images.unsplash.com/photo-1503341504253-dff4815485f1?w=600&h=750&fit=crop&q=80',model:'https://modelviewer.dev/shared-assets/models/Astronaut.glb'},
+];
+const params=new URLSearchParams(location.search);
+const pid=parseInt(params.get('id')||'1');
+const product=PRODUCTS.find(p=>p.id===pid)||PRODUCTS[0];
+document.getElementById('productName').innerHTML=product.name.replace('\n','<br>');
+document.getElementById('productPrice').textContent='₹'+product.price.toLocaleString('en-IN');
+document.getElementById('productDesc').textContent=product.desc;
+document.getElementById('mainImg').src=product.img;
+document.getElementById('thumbImg1').src=product.thumb1||product.img;
+document.getElementById('thumbImg2').src=product.thumb2||product.img;
+document.querySelector('.cat').textContent=product.cat;
+document.title=`VASTRA — ${product.name.replace('\n',' ')}`;
+
+const modelViewerState = { scriptLoaded: false, scriptPromise: null };
+function shouldUse3DViewer() {
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const lowCPU = (navigator.hardwareConcurrency || 4) <= 2;
+  const lowMem = (navigator.deviceMemory || 4) <= 2;
+  const unsupported = !window.customElements || !window.WebGLRenderingContext;
+  return !(reducedMotion || lowCPU || lowMem || unsupported);
+}
+function loadModelViewerScript() {
+  if (modelViewerState.scriptLoaded) return Promise.resolve();
+  if (modelViewerState.scriptPromise) return modelViewerState.scriptPromise;
+  modelViewerState.scriptPromise = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.type = 'module';
+    script.src = 'https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js';
+    script.onload = () => { modelViewerState.scriptLoaded = true; resolve(); };
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+  return modelViewerState.scriptPromise;
+}
+function setupProduct3DViewer() {
+  const viewerWrap = document.getElementById('productViewer');
+  const loading = document.getElementById('viewerLoading');
+  const fallbackImg = document.getElementById('mainImg');
+  const modelViewer = document.getElementById('modelViewer');
+  if (!viewerWrap || !loading || !fallbackImg || !modelViewer) return;
+
+  if (!shouldUse3DViewer()) {
+    loading.classList.add('hide');
+    modelViewer.style.display = 'none';
+    return;
+  }
+
+  const initViewer = async () => {
+    try {
+      await loadModelViewerScript();
+      modelViewer.setAttribute('poster', product.img);
+      modelViewer.setAttribute('src', product.model);
+      const failSafe = setTimeout(() => {
+        loading.classList.add('hide');
+        modelViewer.classList.remove('show');
+        fallbackImg.classList.remove('hide');
+      }, 8000);
+      modelViewer.addEventListener('load', () => {
+        clearTimeout(failSafe);
+        loading.classList.add('hide');
+        modelViewer.classList.add('show');
+        fallbackImg.classList.add('hide');
+      }, { once: true });
+      modelViewer.addEventListener('error', () => {
+        clearTimeout(failSafe);
+        loading.classList.add('hide');
+        modelViewer.classList.remove('show');
+        fallbackImg.classList.remove('hide');
+      }, { once: true });
+    } catch {
+      loading.classList.add('hide');
+      modelViewer.classList.remove('show');
+      fallbackImg.classList.remove('hide');
+    }
+  };
+
+  if ('IntersectionObserver' in window) {
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) {
+        observer.disconnect();
+        initViewer();
+      }
+    }, { rootMargin: '120px 0px' });
+    observer.observe(viewerWrap);
+  } else {
+    initViewer();
+  }
+}
+setupProduct3DViewer();
+</script>
+</body>
+</html>

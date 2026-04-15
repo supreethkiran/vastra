@@ -1,0 +1,82 @@
+{
+  "users": [
+    {
+      "id": "admin_1",
+      "name": "Admin User",
+      "email": "admin@vastra.shop",
+      "passwordHash": "$2a$10$YcXMmz.bi5jhu0KbSE5a8eQ5YqciA4gdeK3g5nnttFvWt0tgtLqpK",
+      "role": "admin"
+    },
+    {
+      "id": "c7c4a421-8478-47a4-8fdc-c88033f4a475",
+      "name": "QA User",
+      "email": "qa_1776277348@test.com",
+      "passwordHash": "$2a$10$UwPS06Er4KQC9XsJYc5fReQrb8SN8HwhOeYwfrV2lwtte3QljsrKq",
+      "role": "user"
+    }
+  ],
+  "products": [
+    {
+      "id": "p1",
+      "name": "Noir Oversized Hoodie",
+      "category": "Hoodies",
+      "price": 2499,
+      "image": "https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=700&h=900&fit=crop&q=80",
+      "description": "Heavyweight fleece hoodie with oversized silhouette.",
+      "stock": 40
+    },
+    {
+      "id": "p2",
+      "name": "Shadow Cargo Pant",
+      "category": "Bottoms",
+      "price": 3299,
+      "image": "https://images.unsplash.com/photo-1542272604-787c3835535d?w=700&h=900&fit=crop&q=80",
+      "description": "Utility cargo with tapered fit and premium twill.",
+      "stock": 32
+    },
+    {
+      "id": "p3",
+      "name": "Minimal Tee White",
+      "category": "Essentials",
+      "price": 999,
+      "image": "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=700&h=900&fit=crop&q=80",
+      "description": "Soft cotton essential tee for daily wear.",
+      "stock": 100
+    },
+    {
+      "id": "84245f3f-bd73-4167-a38b-cebae52e8d2c",
+      "name": "QA Product",
+      "category": "QA",
+      "price": 777,
+      "image": "",
+      "description": "",
+      "stock": 5
+    }
+  ],
+  "orders": [
+    {
+      "id": "9f6cdaa5-3024-45ce-adf5-1a872eaac0ee",
+      "userId": "c7c4a421-8478-47a4-8fdc-c88033f4a475",
+      "userEmail": "qa_1776277348@test.com",
+      "userName": "QA User",
+      "products": [
+        {
+          "id": "p1",
+          "name": "Noir Oversized Hoodie",
+          "price": 2499,
+          "qty": 2
+        }
+      ],
+      "totalAmount": 4998,
+      "paymentId": "pay_test_123",
+      "status": "paid",
+      "address": {
+        "name": "QA User"
+      },
+      "createdAt": "2026-04-15T18:22:28.628Z"
+    }
+  ],
+  "carts": {
+    "c7c4a421-8478-47a4-8fdc-c88033f4a475": []
+  }
+}

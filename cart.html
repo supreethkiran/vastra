@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VASTRA - Cart</title>
+  <style>
+    :root {
+      --bg: #060608;
+      --surface: #101118;
+      --surface-2: #171925;
+      --text: #f0ece4;
+      --muted: rgba(240, 236, 228, 0.65);
+      --gold: #c9a96e;
+      --border: rgba(255, 255, 255, 0.1);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 28px 20px 60px; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+    .title { font-size: 28px; font-weight: 700; letter-spacing: 0.03em; }
+    .link { color: var(--gold); text-decoration: none; font-size: 14px; }
+    .layout { display: grid; grid-template-columns: 1fr 320px; gap: 20px; align-items: start; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 18px 40px rgba(0, 0, 0, 0.3); }
+    .cart-items { padding: 18px; }
+    .item { display: grid; grid-template-columns: 92px 1fr auto; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .item:last-child { border-bottom: 0; }
+    .item img { width: 92px; height: 110px; border-radius: 12px; object-fit: cover; }
+    .item h3 { font-size: 16px; margin-bottom: 8px; }
+    .item p { color: var(--gold); margin-bottom: 12px; font-weight: 700; }
+    .qty { display: inline-flex; align-items: center; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .qty button { background: var(--surface-2); color: var(--text); border: 0; width: 34px; height: 34px; cursor: pointer; font-size: 18px; }
+    .qty span { width: 36px; text-align: center; font-size: 14px; }
+    .remove { align-self: center; background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 999px; width: 32px; height: 32px; cursor: pointer; }
+    .summary { padding: 18px; }
+    .summary h2 { font-size: 18px; margin-bottom: 14px; }
+    .row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; color: var(--muted); }
+    .row.total { color: var(--text); font-size: 18px; margin-top: 16px; font-weight: 700; }
+    .btn { width: 100%; margin-top: 16px; border: 0; border-radius: 12px; padding: 14px; background: var(--gold); color: #111; font-weight: 700; cursor: pointer; }
+    .empty { text-align: center; padding: 45px 20px; color: var(--muted); }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <div class="topbar">
+      <h1 class="title">Shopping Cart</h1>
+      <a class="link" href="./1.html">Continue Shopping</a>
+    </div>
+
+    <div class="layout">
+      <section class="card cart-items" id="cartItems"></section>
+      <aside class="card summary">
+        <h2>Order Summary</h2>
+        <div class="row"><span>Subtotal</span><strong id="subtotal">₹0</strong></div>
+        <div class="row"><span>Shipping</span><strong>Free</strong></div>
+        <div class="row total"><span>Total</span><strong id="total">₹0</strong></div>
+        <button class="btn" id="checkoutBtn">Proceed to Checkout</button>
+      </aside>
+    </div>
+  </main>
+
+  <script src="./js/cart.js"></script>
+  <script>
+    const cartItems = document.getElementById("cartItems");
+    const subtotal = document.getElementById("subtotal");
+    const total = document.getElementById("total");
+    const checkoutBtn = document.getElementById("checkoutBtn");
+
+    function getSafeCart() {
+      if (window.VastraCart && typeof window.VastraCart.getCart === "function") {
+        return window.VastraCart.getCart();
+      }
+      try {
+        return JSON.parse(localStorage.getItem("vastra_cart") || localStorage.getItem("cart") || "[]");
+      } catch (error) {
+        return [];
+      }
+    }
+
+    function formatSafePrice(value) {
+      if (window.VastraCart && typeof window.VastraCart.formatPrice === "function") {
+        return window.VastraCart.formatPrice(value);
+      }
+      return "₹" + Number(value || 0).toLocaleString("en-IN");
+    }
+
+    function renderCartPage() {
+      const cart = getSafeCart();
+      if (!cart.length) {
+        cartItems.innerHTML = '<div class="empty"><h3>Your cart is empty</h3><p>Add products to continue checkout.</p></div>';
+        subtotal.textContent = "₹0";
+        total.textContent = "₹0";
+        checkoutBtn.disabled = true;
+        return;
+      }
+
+      cartItems.innerHTML = cart.map((item) => `
+        <article class="item">
+          <img src="${item.image}" alt="${item.name}">
+          <div>
+            <h3>${item.name}</h3>
+            <p>${formatSafePrice(item.price)}</p>
+            <div class="qty">
+              <button type="button" data-id="${item.id}" data-action="dec">-</button>
+              <span>${item.qty}</span>
+              <button type="button" data-id="${item.id}" data-action="inc">+</button>
+            </div>
+          </div>
+          <button class="remove" data-id="${item.id}" data-action="remove">x</button>
+        </article>
+      `).join("");
+
+      const sub = cart.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.qty || 0), 0);
+      subtotal.textContent = formatSafePrice(sub);
+      total.textContent = formatSafePrice(sub);
+      checkoutBtn.disabled = false;
+    }
+
+    cartItems.addEventListener("click", (event) => {
+      const btn = event.target.closest("button[data-action]");
+      if (!btn) return;
+      const id = btn.dataset.id;
+      const action = btn.dataset.action;
+      if (!window.VastraCart) return;
+      if (action === "inc") window.VastraCart.updateQuantity(id, 1);
+      if (action === "dec") window.VastraCart.updateQuantity(id, -1);
+      if (action === "remove") window.VastraCart.removeFromCart(id);
+      renderCartPage();
+    });
+
+    checkoutBtn.addEventListener("click", () => {
+      window.location.href = "./checkout.html";
+    });
+
+    renderCartPage();
+  </script>
+</body>
+</html>
