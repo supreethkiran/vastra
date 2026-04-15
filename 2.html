@@ -367,7 +367,7 @@
 <script>
 /* 3D BG */
 (function(){
-  if(!window.THREE||window.innerWidth<600)return;
+  if(!window.THREE||window.innerWidth<360)return;
   const canvas=document.getElementById('bg3d');
   const scene=new THREE.Scene();
   const camera=new THREE.PerspectiveCamera(50,window.innerWidth/window.innerHeight,0.1,100);

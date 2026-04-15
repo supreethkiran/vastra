@@ -1057,8 +1057,23 @@
       .hero-cta { flex-wrap: wrap; margin-top: 26px; }
       .hero-cta .btn { width: 100%; justify-content: center; }
       .hero-visual { max-width: 450px; width: 100%; margin: 0 auto; }
-      .hero-stats { display: none; }
-      .hero-scroll { display: none; }
+    .hero-stats {
+      display: flex;
+      right: 20px;
+      bottom: 86px;
+      gap: 10px;
+      flex-direction: row;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      max-width: 220px;
+    }
+    .hero-stat-item { text-align: right; }
+    .hero-stat-num { font-size: 24px; }
+    .hero-scroll {
+      left: 20px;
+      bottom: 24px;
+      display: flex;
+    }
       .hero-dots { bottom: 18px; }
       .newsletter-form { flex-direction: column; }
       .newsletter-input { border-right: 1px solid var(--border); }
@@ -1569,15 +1584,13 @@ function hideSceneFallback() {
 
 function get3DProfile() {
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const isTouch = window.matchMedia('(hover: none), (pointer: coarse)').matches;
-  const smallScreen = window.innerWidth < 820;
   const lowCPU = (navigator.hardwareConcurrency || 4) <= 2;
   const lowMemory = (navigator.deviceMemory || 8) <= 2;
-  // Keep 3D enabled on most desktops/tablets; only disable on clearly constrained devices.
-  const canUse3D = !reducedMotion && !(isTouch && smallScreen) && !lowCPU && !lowMemory;
+  // Enable 3D on mobile/tablet too; only disable for reduced-motion or clearly weak devices.
+  const canUse3D = !reducedMotion && !lowCPU && !lowMemory;
   return {
     canUse3D,
-    quality: window.innerWidth > 1400 ? 'high' : 'medium'
+    quality: window.innerWidth > 1400 ? 'high' : window.innerWidth > 900 ? 'medium' : 'low'
   };
 }
 
@@ -1618,14 +1631,15 @@ function get3DProfile() {
       canvas, antialias: false, alpha: true,
       powerPreference: 'high-performance'
     });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    const maxPixelRatio = profile.quality === 'high' ? 1.5 : profile.quality === 'medium' ? 1.25 : 1;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, maxPixelRatio));
     renderer.setSize(W, H);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.1;
     hideSceneFallback();
 
     /* PARTICLE FIELD */
-    const PARTICLE_COUNT = profile.quality === 'high' ? 520 : 340;
+    const PARTICLE_COUNT = profile.quality === 'high' ? 520 : profile.quality === 'medium' ? 340 : 220;
   const pGeo = new THREE.BufferGeometry();
   const positions = new Float32Array(PARTICLE_COUNT * 3);
   const colors = new Float32Array(PARTICLE_COUNT * 3);
