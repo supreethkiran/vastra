@@ -3,7 +3,7 @@ import { createOrder } from "../services/orderService.js";
 import { showToast } from "../components/toast.js";
 import { api } from "../services/api.js";
 
-const RAZORPAY_TEST_KEY = "rzp_test_1DP5mmOlF5G5ag";
+const RAZORPAY_FALLBACK_TEST_KEY = "rzp_test_1DP5mmOlF5G5ag";
 
 function calcTotal(cart) {
   return cart.reduce((sum, item) => sum + Number(item.price) * Number(item.qty), 0);
@@ -17,14 +17,14 @@ function applyCoupon(total, code) {
   return { total, discount: 0, message: "Invalid coupon code" };
 }
 
-function payWithRazorpay({ amount, customer, orderId, currency = "INR" }) {
+function payWithRazorpay({ amount, customer, keyId, orderId, currency = "INR" }) {
   return new Promise((resolve, reject) => {
     if (!window.Razorpay) {
       reject(new Error("Razorpay SDK missing"));
       return;
     }
     const rzp = new window.Razorpay({
-      key: RAZORPAY_TEST_KEY,
+      key: keyId || RAZORPAY_FALLBACK_TEST_KEY,
       amount: amount * 100,
       currency,
       ...(orderId ? { order_id: orderId } : {}),
@@ -139,6 +139,7 @@ export function checkoutPage(app) {
       const payment = await payWithRazorpay({
         amount: finalTotal,
         customer: details,
+        keyId: paymentOrder?.keyId,
         orderId: paymentOrder?.mode === "live" ? paymentOrder?.order?.id : undefined,
         currency: paymentOrder?.order?.currency || "INR"
       });

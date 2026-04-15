@@ -23,6 +23,7 @@ router.post("/create-order", requireAuth, async (req, res, next) => {
     if (!razorpay) {
       return res.status(200).json({
         mode: "demo",
+        keyId: process.env.RAZORPAY_KEY_ID || "rzp_test_1DP5mmOlF5G5ag",
         order: { id: `demo_order_${Date.now()}`, amount: Math.round(Number(amount) * 100), currency: "INR" }
       });
     }
@@ -32,7 +33,7 @@ router.post("/create-order", requireAuth, async (req, res, next) => {
       currency: "INR",
       receipt: `receipt_${Date.now()}`
     });
-    return res.json({ mode: "live", order });
+    return res.json({ mode: "live", keyId: process.env.RAZORPAY_KEY_ID, order });
   } catch (error) {
     return next(error);
   }
