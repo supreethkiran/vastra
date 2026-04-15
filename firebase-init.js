@@ -132,21 +132,6 @@ async function ensureFirebaseReady() {
   }
 }
 
-function normalizeAuthError(error) {
-  const code = String(error?.code || "");
-  const rawMessage = String(error?.message || "Authentication failed.");
-  if (code.includes("network-request-failed")) {
-    return "Auth request failed. Check internet and Firebase authDomain configuration.";
-  }
-  if (code.includes("invalid-api-key")) {
-    return "Invalid Firebase API key.";
-  }
-  if (code.includes("auth-domain-config-required")) {
-    return "Firebase authDomain is missing or invalid.";
-  }
-  return rawMessage;
-}
-
 initializeFirebaseRuntime();
 
 function toProduct(docSnap) {
@@ -392,32 +377,36 @@ function subscribeAuth(callback) {
 async function signUpWithEmail(email, password) {
   await ensureFirebaseReady();
   const authInstance = ensureAuthInitialized();
+  console.log("[VASTRA AUTH] Attempting signup...", { email: String(email || "").trim() });
   try {
     const credential = await createUserWithEmailAndPassword(
       authInstance,
       String(email || "").trim(),
       String(password || "")
     );
+    console.log("[VASTRA AUTH] Signup success:", credential?.user?.uid || "");
     return credential.user;
   } catch (error) {
-    console.error("[VASTRA] Signup failed", error);
-    throw new Error(normalizeAuthError(error));
+    console.error("[VASTRA AUTH ERROR]", error);
+    throw new Error(`${error?.code || "auth/unknown"} | ${error?.message || "Unknown auth error"}`);
   }
 }
 
 async function signInWithEmail(email, password) {
   await ensureFirebaseReady();
   const authInstance = ensureAuthInitialized();
+  console.log("[VASTRA AUTH] Attempting signin...", { email: String(email || "").trim() });
   try {
     const credential = await signInWithEmailAndPassword(
       authInstance,
       String(email || "").trim(),
       String(password || "")
     );
+    console.log("[VASTRA AUTH] Signin success:", credential?.user?.uid || "");
     return credential.user;
   } catch (error) {
-    console.error("[VASTRA] Signin failed", error);
-    throw new Error(normalizeAuthError(error));
+    console.error("[VASTRA AUTH ERROR]", error);
+    throw new Error(`${error?.code || "auth/unknown"} | ${error?.message || "Unknown auth error"}`);
   }
 }
 
