@@ -275,8 +275,19 @@ function subscribeCart(callback) {
 async function upsertCartItem(product, qtyDelta = 1) {
   if (!db) throw new Error("Firestore not initialized");
   if (!authUser) throw new Error("Please sign in to add items to cart.");
-  console.log("Writing to Firestore:", product);
-  const itemRef = cartItemDoc(product.id);
+  const payload = product && typeof product === "object" ? product : {};
+  const clean = {
+    id: String(payload.id || "").trim(),
+    name: String(payload.name || "").trim(),
+    price: Number(payload.price),
+    image: String(payload.image || "").trim()
+  };
+  if (!clean.id || !clean.name || !Number.isFinite(clean.price) || clean.price <= 0 || !clean.image) {
+    throw new Error("Invalid product payload.");
+  }
+
+  console.log("Writing to Firestore:", clean);
+  const itemRef = cartItemDoc(clean.id);
   const current = await getDoc(itemRef);
   const existingQty = current.exists() ? Number((current.data() || {}).qty || 0) : 0;
   const nextQty = existingQty + Number(qtyDelta || 1);
@@ -287,11 +298,11 @@ async function upsertCartItem(product, qtyDelta = 1) {
   await setDoc(
     itemRef,
     {
-      id: String(product.id),
-      productId: String(product.productId || product.id),
-      name: product.name || "Product",
-      price: Number(product.price || 0),
-      image: product.image || "",
+      id: clean.id,
+      productId: clean.id,
+      name: clean.name,
+      price: clean.price,
+      image: clean.image,
       qty: nextQty,
       updatedAt: serverTimestamp()
     },

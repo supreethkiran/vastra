@@ -2070,7 +2070,7 @@
 <!-- FIREBASE + CORE LOGIC -->
 <script src="/firebase-config.js"></script>
 <script type="module" src="/firebase-init.js"></script>
-<script src="./cart.js"></script>
+  <!-- cart.js removed: cart is now Firestore-only via firebaseApi -->
 <script>
 /* ─── THREE.JS MEGA 3D BACKGROUND ───────────────────────── */
 function showSceneFallback() {
@@ -2464,43 +2464,34 @@ const revealObs = new IntersectionObserver(entries => {
 }, { threshold: 0.12 });
 document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
 
-/* ─── CART ──────────────────────────────────────────────── */
-function getCart() {
-  if (window.VastraCart?.getCart) return window.VastraCart.getCart();
-  return [];
-}
-function saveCart(c) {
-  if (window.VastraCart?.saveCart) return window.VastraCart.saveCart(c);
-  return c;
-}
-const fmt = p => '₹' + p.toLocaleString('en-IN');
+/* ─── CART (FIRESTORE) ──────────────────────────────────── */
+const fmt = (p) => '₹' + Number(p || 0).toLocaleString('en-IN');
+let __cartItems = [];
+let __cartUnsub = null;
 
 function updateBadge() {
-  const total = getCart().reduce((s, i) => s + i.qty, 0);
+  const total = (__cartItems || []).reduce((s, i) => s + Number(i.qty || 0), 0);
   const badge = document.getElementById('cartBadge');
-  badge.textContent = total;
+  if (!badge) return;
+  badge.textContent = String(total);
   badge.classList.toggle('show', total > 0);
 }
-window.VastraCart?.subscribe?.(() => {
-  updateBadge();
-  renderCart();
-});
 
-async function addToCart(item) {
-  if (window.VastraCart?.addToCart) {
-    await window.VastraCart.addToCart(item, 1);
-    updateBadge(); renderCart(); showToast('Added to Cart');
-    return;
+function initCart(user) {
+  try {
+    __cartUnsub?.();
+  } catch {
+    // ignore
   }
-  const cart = getCart();
-  const ex = cart.find(i => i.id === item.id);
-  if (ex) ex.qty++;
-  else cart.push({ ...item, qty: 1 });
-  saveCart(cart); updateBadge(); renderCart(); showToast('Added to Cart');
+  __cartUnsub = window.firebaseApi.subscribeCart((items) => {
+    __cartItems = Array.isArray(items) ? items : [];
+    renderCart(__cartItems);
+    updateBadge();
+  });
 }
 
-function renderCart() {
-  const cart = getCart();
+function renderCart(items) {
+  const cart = Array.isArray(items) ? items : [];
   const container = document.getElementById('drawerItems');
   const footer = document.getElementById('drawerFooter');
   if (!cart.length) {
@@ -2527,29 +2518,26 @@ function renderCart() {
   document.getElementById('grandTotal').textContent = fmt(sub);
 }
 
-function changeQty(id, d) {
-  if (window.VastraCart?.updateQuantity) {
-    window.VastraCart.updateQuantity(id, d);
-  } else {
-    const cart = getCart();
-    const item = cart.find((entry) => String(entry.id) === String(id));
-    if (item) {
-      item.qty += d;
-      if (item.qty < 1) cart.splice(cart.indexOf(item), 1);
-    }
-    saveCart(cart);
+async function changeQty(id, d) {
+  const item = (__cartItems || []).find((entry) => String(entry.id) === String(id));
+  if (!item) return;
+  const next = Math.max(0, Number(item.qty || 0) + Number(d || 0));
+  try {
+    if (!window.firebaseApi?.setCartItemQty) throw new Error("Cart unavailable");
+    await window.firebaseApi.setCartItemQty(String(id), next);
+  } catch (e) {
+    console.error("[VASTRA][cart] qty update failed", e);
+    showToast(e?.message || "Unable to update cart");
   }
-  updateBadge();
-  renderCart();
 }
-function removeItem(id) {
-  if (window.VastraCart?.removeFromCart) {
-    window.VastraCart.removeFromCart(id);
-  } else {
-    saveCart(getCart().filter((entry) => String(entry.id) !== String(id)));
+async function removeItem(id) {
+  try {
+    if (!window.firebaseApi?.removeCartItem) throw new Error("Cart unavailable");
+    await window.firebaseApi.removeCartItem(String(id));
+  } catch (e) {
+    console.error("[VASTRA][cart] remove failed", e);
+    showToast(e?.message || "Unable to remove item");
   }
-  updateBadge();
-  renderCart();
 }
 
 document.getElementById('drawerItems')?.addEventListener('click', (event) => {
@@ -2563,7 +2551,7 @@ document.getElementById('drawerItems')?.addEventListener('click', (event) => {
 });
 
 document.getElementById('openCartBtn').addEventListener('click', () => {
-  renderCart();
+  renderCart(__cartItems);
   document.getElementById('cartDrawer').classList.add('open');
   document.getElementById('drawerOverlay').classList.add('open');
 });
@@ -2613,14 +2601,25 @@ async function handleAddToCartButton(btn) {
   if (!btn) return;
   const rawId = String(btn.dataset.id || "").trim();
   const product = {
-    id: rawId,
-    name: btn.dataset.name,
+    id: String(rawId),
+    name: String(btn.dataset.name || ""),
     price: Number(btn.dataset.price),
-    image: btn.dataset.image
+    image: String(btn.dataset.image || "")
   };
   if (!product.id || !product.name || !Number.isFinite(product.price) || product.price <= 0 || !product.image) return;
 
-  await addToCart(product);
+  const user = window.firebaseApi?.getCurrentUser?.() || null;
+  if (!user) {
+    alert("Login required");
+    // Prefer in-page modal if present; otherwise send to login route.
+    const loginModal = document.getElementById("loginModal");
+    if (loginModal) loginModal.classList.add("open");
+    else window.location.href = "/#/login";
+    return;
+  }
+
+  await window.firebaseApi.upsertCartItem(product, 1);
+  showToast('Added to Cart');
   const originalText = btn.dataset.originalText || btn.textContent.trim();
   btn.dataset.originalText = originalText;
   btn.disabled = true;
@@ -2632,6 +2631,38 @@ async function handleAddToCartButton(btn) {
     btn.textContent = originalText;
   }, 900);
 }
+
+// Auth/cart subscriptions (avoid getCurrentUser timing issues on load)
+(function bindAuthAndCart() {
+  const start = async () => {
+    try {
+      if (window.firebaseReady) await window.firebaseReady;
+      if (!window.firebaseApi?.subscribeAuth) return;
+      window.firebaseApi.subscribeAuth((user) => {
+        if (!user) {
+          __cartItems = [];
+          try {
+            __cartUnsub?.();
+          } catch {
+            // ignore
+          }
+          __cartUnsub = null;
+          renderCart([]);
+          updateBadge();
+          return;
+        }
+        initCart(user);
+      });
+    } catch (e) {
+      console.error("[VASTRA][cart] init failed", e);
+    }
+  };
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", start, { once: true });
+  } else {
+    start();
+  }
+})();
 
 function wirePlaceholderInteractions() {
   const searchBtn = document.querySelector('.nav-actions .nav-icon-btn[aria-label="Search"]');

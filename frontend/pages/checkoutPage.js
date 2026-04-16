@@ -1,4 +1,3 @@
-import { getLocalCart } from "../services/cartService.js";
 import { showToast } from "../components/toast.js";
 import { LAST_ORDER_KEY, setJson } from "../utils/storage.js";
 
@@ -59,7 +58,7 @@ export function checkoutPage(app) {
     </div>
   `;
 
-  let cartItems = getLocalCart();
+  let cartItems = [];
   let baseTotal = calcTotal(cartItems);
   let finalTotal = baseTotal;
   let appliedCoupon = "";

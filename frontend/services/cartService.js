@@ -1,20 +1,7 @@
-import { CART_KEY, getJson, setJson } from "../utils/storage.js";
 import { getCurrentUser } from "./authService.js";
 
-let remoteBound = false;
-
-export function getLocalCart() {
-  return getJson(CART_KEY, []);
-}
-
-export function setLocalCart(cart) {
-  setJson(CART_KEY, cart);
-  try {
-    window.dispatchEvent(new CustomEvent("cart-updated", { detail: cart }));
-  } catch {
-    // ignore event dispatch failures
-  }
-}
+let cartState = [];
+const listeners = new Set();
 
 function showToastSafe(message) {
   try {
@@ -24,38 +11,19 @@ function showToastSafe(message) {
   }
 }
 
-function ensureRemoteCartBound() {
-  if (remoteBound) return;
-  remoteBound = true;
-
-  const bind = () => {
-    if (!window.firebaseApi?.subscribeCart) return;
-    window.firebaseApi.subscribeCart((items) => {
-      setLocalCart(items || []);
-    });
-  };
-
-  if (window.firebaseApi?.subscribeAuth) {
-    window.firebaseApi.subscribeAuth((user) => {
-      if (!user) {
-        setLocalCart([]);
-        return;
-      }
-      bind();
-    });
-  }
-
-  // Best-effort initial bind once firebaseApi exists.
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", bind, { once: true });
-  } else {
-    bind();
-  }
+function setCartState(items) {
+  cartState = Array.isArray(items) ? items : [];
+  listeners.forEach((listener) => {
+    try {
+      listener(cartState);
+    } catch {
+      // ignore listener errors
+    }
+  });
 }
 
 export function addToCart(product) {
-  ensureRemoteCartBound();
-  if (!getCurrentUser()) {
+  if (!getCurrentUser() && !window.firebaseApi?.getCurrentUser?.()) {
     showToastSafe("Please sign in to use cart");
     throw new Error("Please sign in to use cart");
   }
@@ -64,41 +32,56 @@ export function addToCart(product) {
     showToastSafe("Out of stock");
     throw new Error("Out of stock");
   }
-  const cart = getLocalCart();
-  const existing = cart.find((item) => item.id === product.id);
-  if (existing) {
-    if (stock !== null && Number(existing.qty || 0) + 1 > stock) {
-      showToastSafe("Not enough stock");
-      throw new Error("Not enough stock");
-    }
-    existing.qty += 1;
-    if (product?.selectedSize && !existing.selectedSize) existing.selectedSize = product.selectedSize;
-    if (product?.selectedSize && existing.selectedSize && existing.selectedSize !== product.selectedSize) {
-      existing.selectedSize = product.selectedSize;
-    }
-  } else cart.push({ ...product, qty: 1 });
-  setLocalCart(cart);
-  window.firebaseApi?.upsertCartItem?.(product, 1).catch((error) => console.error("[cart] upsert failed", error));
-  return cart;
+  const payload = {
+    id: String(product?.id || ""),
+    name: String(product?.name || "Product"),
+    price: Number(product?.price || 0),
+    image: String(product?.image || "")
+  };
+  if (!payload.id || !payload.name || !Number.isFinite(payload.price) || payload.price <= 0 || !payload.image) {
+    throw new Error("Invalid product payload.");
+  }
+  window.firebaseApi?.upsertCartItem?.(payload, 1).catch((error) => console.error("[cart] upsert failed", error));
+  return cartState;
 }
 
 export function subscribeCart(listener) {
-  ensureRemoteCartBound();
   if (typeof listener !== "function") return () => {};
-  const handler = (event) => listener(event.detail || []);
-  window.addEventListener("cart-updated", handler);
-  listener(getLocalCart());
-  return () => window.removeEventListener("cart-updated", handler);
+  listeners.add(listener);
+  listener(cartState);
+
+  let unsubRemote = null;
+  const bindRemote = async () => {
+    if (window.firebaseReady) await window.firebaseReady;
+    if (!window.firebaseApi?.subscribeAuth || !window.firebaseApi?.subscribeCart) return;
+    window.firebaseApi.subscribeAuth((user) => {
+      unsubRemote?.();
+      unsubRemote = null;
+      if (!user) {
+        setCartState([]);
+        return;
+      }
+      unsubRemote = window.firebaseApi.subscribeCart((items) => setCartState(items));
+    });
+  };
+  bindRemote().catch(() => {});
+
+  return () => {
+    listeners.delete(listener);
+    try {
+      unsubRemote?.();
+    } catch {
+      // ignore
+    }
+  };
 }
 
 export async function setCartItemQty(id, qty) {
-  ensureRemoteCartBound();
-  if (!getCurrentUser()) throw new Error("Please sign in to use cart");
+  if (!getCurrentUser() && !window.firebaseApi?.getCurrentUser?.()) throw new Error("Please sign in to use cart");
   await window.firebaseApi.setCartItemQty(String(id), Number(qty));
 }
 
 export async function removeCartItem(id) {
-  ensureRemoteCartBound();
-  if (!getCurrentUser()) throw new Error("Please sign in to use cart");
+  if (!getCurrentUser() && !window.firebaseApi?.getCurrentUser?.()) throw new Error("Please sign in to use cart");
   await window.firebaseApi.removeCartItem(String(id));
 }

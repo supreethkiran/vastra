@@ -1,12 +1,12 @@
 import { getCurrentUser, logout } from "../services/authService.js";
 import { showToast } from "./toast.js";
 import { fetchProducts } from "../services/productService.js";
-import { getLocalCart } from "../services/cartService.js";
+import { subscribeCart } from "../services/cartService.js";
 
 export function renderNavbar(onNavigate) {
   const user = getCurrentUser();
   const el = document.getElementById("appHeader");
-  const cartCount = getLocalCart().reduce((sum, item) => sum + Number(item.qty || 0), 0);
+  const cartCount = 0;
   el.innerHTML = `
     <nav class="nav">
       <a class="brand" href="#/">VASTRA</a>
@@ -99,6 +99,15 @@ export function renderNavbar(onNavigate) {
       return;
     }
     onNavigate("#/cart");
+  });
+
+  // Live cart count via Firestore subscription (no localStorage cart).
+  const countEl = document.getElementById("navCartCount");
+  subscribeCart((items) => {
+    const count = Array.isArray(items) ? items.reduce((sum, it) => sum + Number(it.qty || 0), 0) : 0;
+    if (!countEl) return;
+    countEl.textContent = String(count);
+    countEl.style.display = count > 0 ? "" : "none";
   });
 
   const backdrop = document.getElementById("mobileNavBackdrop");

@@ -1,4 +1,4 @@
-import { getLocalCart, removeCartItem, setCartItemQty, subscribeCart } from "../services/cartService.js";
+import { removeCartItem, setCartItemQty, subscribeCart } from "../services/cartService.js";
 import { showToast } from "./toast.js";
 
 const FREE_SHIPPING_THRESHOLD = 999;
@@ -16,6 +16,7 @@ function formatINR(value) {
 }
 
 export function mountMiniCart() {
+  let currentCart = [];
   if (window.__vastraMiniCartMounted) return window.__vastraMiniCart;
   window.__vastraMiniCartMounted = true;
 
@@ -60,7 +61,7 @@ export function mountMiniCart() {
     document.documentElement.style.overflow = "";
   };
   const open = () => {
-    render(getLocalCart());
+    render(currentCart);
     drawer.classList.add("open");
     backdrop.classList.add("open");
     document.documentElement.style.overflow = "hidden";
@@ -136,7 +137,7 @@ export function mountMiniCart() {
     body.querySelectorAll("[data-mini-inc]").forEach((btn) => {
       btn.addEventListener("click", () => {
         const id = btn.dataset.miniInc;
-        const item = getLocalCart().find((c) => String(c.id) === String(id));
+        const item = currentCart.find((c) => String(c.id) === String(id));
         if (!item) return;
         setQty(id, Number(item.qty || 0) + 1);
       });
@@ -144,7 +145,7 @@ export function mountMiniCart() {
     body.querySelectorAll("[data-mini-dec]").forEach((btn) => {
       btn.addEventListener("click", () => {
         const id = btn.dataset.miniDec;
-        const item = getLocalCart().find((c) => String(c.id) === String(id));
+        const item = currentCart.find((c) => String(c.id) === String(id));
         if (!item) return;
         setQty(id, Number(item.qty || 0) - 1);
       });
@@ -173,12 +174,13 @@ export function mountMiniCart() {
   });
 
   subscribeCart((nextCart) => {
+    currentCart = Array.isArray(nextCart) ? nextCart : [];
     updateNavCount(nextCart);
     if (drawer.classList.contains("open")) render(nextCart);
   });
 
   // initial
-  updateNavCount(getLocalCart());
+  updateNavCount([]);
 
   window.__vastraMiniCart = { open, close, render };
   return window.__vastraMiniCart;

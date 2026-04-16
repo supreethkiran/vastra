@@ -183,12 +183,12 @@
 
   <script src="/firebase-config.js"></script>
   <script type="module" src="/firebase-init.js"></script>
-  <script src="./cart.js"></script>
   <script>
     const orderIdParam = new URLSearchParams(window.location.search).get("orderId");
     const orderId = orderIdParam || "N/A";
 
     document.getElementById("orderIdText").textContent = "Order ID: " + orderId;
+    const fmt = (v) => "₹" + Number(v || 0).toLocaleString("en-IN");
 
     async function loadOrder() {
       if (!orderIdParam || !window.firebaseApi?.getOrderById) {
@@ -210,11 +210,11 @@
           .map((item) => `
             <div class="item">
               <span>${item.name} × ${item.qty}</span>
-              <strong>${window.VastraCart.formatPrice(item.price * item.qty)}</strong>
+              <strong>${fmt(Number(item.price || 0) * Number(item.qty || 0))}</strong>
             </div>
           `)
           .join("");
-        document.getElementById("orderTotal").textContent = window.VastraCart.formatPrice(order.total || 0);
+        document.getElementById("orderTotal").textContent = fmt(order.total || 0);
       } catch (error) {
         document.getElementById("orderProducts").innerHTML = `<p style='color:var(--muted);font-size:14px;'>${error.message || "Order not found"}</p>`;
       }

@@ -1,4 +1,4 @@
-import { getLocalCart, removeCartItem, setCartItemQty, subscribeCart } from "../services/cartService.js";
+import { removeCartItem, setCartItemQty, subscribeCart } from "../services/cartService.js";
 import { showToast } from "../components/toast.js";
 
 const FREE_SHIPPING_THRESHOLD = 999;
@@ -8,10 +8,7 @@ function total(cart) {
 }
 
 export async function cartPage(app) {
-  const cart = getLocalCart();
-
-  const cartTotal = total(cart);
-  const remaining = Math.max(0, FREE_SHIPPING_THRESHOLD - cartTotal);
+  const cart = [];
 
   function render(cartItems) {
     if (!cartItems.length) {
@@ -67,7 +64,7 @@ export async function cartPage(app) {
         .join("")}
       <div class="card row" style="padding:12px;">
         <strong>Total</strong>
-        <strong class="price">₹${total(cart).toLocaleString("en-IN")}</strong>
+        <strong class="price">₹${total(cartItems).toLocaleString("en-IN")}</strong>
       </div>
       <button id="checkoutBtn" class="btn primary">Proceed to Checkout</button>
     </div>

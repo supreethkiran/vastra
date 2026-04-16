@@ -519,7 +519,7 @@
 
 <script src="/firebase-config.js"></script>
 <script type="module" src="/firebase-init.js"></script>
-<script src="./cart.js"></script>
+<!-- cart.js removed: cart is now Firestore-only via firebaseApi -->
 <script>
 /* 3D BG */
 (function(){
@@ -610,16 +610,11 @@ function addRippleToButton(btn, clientX, clientY) {
 }
 
 function ensureLoggedIn() {
-  try {
-    if (!window.firebaseApi?.getCurrentUser?.()) {
-      alert("Please login first");
-      return false;
-    }
-    return true;
-  } catch {
-    alert("Please login first");
-    return false;
-  }
+  const user = window.firebaseApi?.getCurrentUser?.() || null;
+  if (user) return true;
+  alert("Login required");
+  window.location.href = "/#/login";
+  return false;
 }
 
 function validateCartProduct(product) {
@@ -637,15 +632,6 @@ function validateCartProduct(product) {
   };
 }
 
-function mergeLocalCartItem(item, qtyDelta) {
-  if (!window.VastraCart?.getCart || !window.VastraCart?.saveCart) return;
-  const cart = window.VastraCart.getCart();
-  const existing = cart.find((c) => String(c.id) === String(item.id));
-  if (existing) existing.qty = Math.max(1, Number(existing.qty || 1) + Number(qtyDelta || 1));
-  else cart.push({ ...item, qty: Math.max(1, Number(qtyDelta || 1)) });
-  window.VastraCart.saveCart(cart);
-}
-
 async function handleAddToCart(productInput, qtyDelta = 1) {
   try {
     if (window.firebaseReady) await window.firebaseReady;
@@ -654,7 +640,6 @@ async function handleAddToCart(productInput, qtyDelta = 1) {
     const item = validateCartProduct(productInput);
     await window.firebaseApi.upsertCartItem(item, Number(qtyDelta || 1));
     console.log("Added to cart successfully");
-    mergeLocalCartItem(item, Number(qtyDelta || 1));
   } catch (err) {
     console.error("Add to cart failed:", err);
     alert(err?.message || "Add to cart failed");
