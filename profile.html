@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VASTRA — Profile</title>
+  <style>
+    :root{
+      --bg:#060608;--surface:#101118;--surface2:#171925;--text:#f0ece4;--muted:rgba(240,236,228,.65);
+      --gold:#c9a96e;--border:rgba(255,255,255,.12);--danger:#ff6b7a;--ok:#57d39b;
+      --shadow:0 18px 44px rgba(0,0,0,.38);
+      --ease:cubic-bezier(0.16,1,0.3,1);
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:var(--bg);color:var(--text);font-family:Arial,sans-serif;min-height:100vh}
+    a{color:inherit;text-decoration:none}
+    .topbar{
+      position:sticky;top:0;z-index:10;
+      background:rgba(6,6,8,.92);
+      border-bottom:1px solid var(--border);
+      backdrop-filter:blur(18px);
+    }
+    .topbar-inner{
+      max-width:1100px;margin:0 auto;padding:14px 16px;
+      display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+    }
+    .brand{letter-spacing:.22em;font-weight:900}
+    .nav-actions{display:flex;gap:10px;flex-wrap:wrap}
+    .wrap{max-width:1100px;margin:0 auto;padding:22px 16px 90px}
+    .grid{display:grid;grid-template-columns: 1fr 1.2fr;gap:14px;align-items:start}
+    .card{
+      background:linear-gradient(160deg, rgba(255,255,255,.025), rgba(255,255,255,.01));
+      border:1px solid var(--border);
+      border-radius:16px;
+      padding:16px;
+      box-shadow:var(--shadow);
+    }
+    .title{font-size:26px;letter-spacing:.04em;margin-bottom:8px}
+    .muted{color:var(--muted)}
+    .row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+    .pill{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:6px 10px;border-radius:999px;border:1px solid var(--border);
+      background:rgba(255,255,255,.03);color:var(--muted);font-size:12px;
+    }
+    .btn{
+      border:1px solid var(--border);
+      background:transparent;
+      color:var(--text);
+      border-radius:12px;
+      padding:12px 14px;
+      cursor:pointer;
+      font-weight:900;
+      letter-spacing:.16em;
+      text-transform:uppercase;
+      font-size:10px;
+      transition:transform .18s var(--ease), border-color .18s var(--ease), color .18s var(--ease), background .18s var(--ease), opacity .18s var(--ease);
+      min-height:46px;
+    }
+    .btn:hover{border-color:rgba(201,169,110,.55);color:var(--gold);transform:translateY(-1px)}
+    .btn.primary{background:var(--gold);border-color:var(--gold);color:#060608}
+    .btn.primary:hover{color:#060608}
+    .btn:disabled{opacity:.65;cursor:not-allowed;transform:none}
+    .spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.28);border-top-color:#fff;border-radius:50%;display:inline-block;animation:spin .7s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .orders{display:grid;gap:10px}
+    .order{
+      padding:12px;
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:14px;
+      background:rgba(255,255,255,.02);
+      transition:transform .18s var(--ease), border-color .18s var(--ease);
+    }
+    .order:hover{transform:translateY(-1px);border-color:rgba(201,169,110,.28)}
+    .status{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:4px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.12);
+      font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+      background:rgba(255,255,255,.02);
+      color:rgba(240,236,228,.72);
+    }
+    .status.ok{border-color:rgba(87,211,155,.35);background:rgba(87,211,155,.10)}
+    .status.warn{border-color:rgba(201,169,110,.35);background:rgba(201,169,110,.12)}
+    .status.bad{border-color:rgba(255,107,122,.35);background:rgba(255,107,122,.10)}
+    .danger{color:var(--danger)}
+    .empty{padding:14px;border:1px dashed rgba(255,255,255,.12);border-radius:14px;color:var(--muted);text-align:center}
+    @media (max-width: 900px){.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="/#/">
+        VASTRA
+      </a>
+      <div class="nav-actions">
+        <a class="btn" href="/#/">Shop</a>
+        <a class="btn" href="/#/orders">My Orders</a>
+        <button id="logoutBtn" class="btn primary" type="button">Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <h1 class="title">Profile</h1>
+    <p class="muted" id="statusLine">Loading your account…</p>
+
+    <div class="grid" style="margin-top:14px;">
+      <section class="card">
+        <div class="row" style="margin-bottom:10px;">
+          <strong>Profile Info</strong>
+          <span class="pill" id="loggedInPill">Checking…</span>
+        </div>
+        <div class="orders" style="gap:8px;">
+          <div class="row"><span class="muted">Email</span><strong id="userEmail">—</strong></div>
+          <div class="row"><span class="muted">UID</span><strong id="userUid">—</strong></div>
+          <div class="row"><span class="muted">Status</span><strong id="userStatus">—</strong></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="row" style="margin-bottom:10px;">
+          <strong>Orders</strong>
+          <span class="pill" id="ordersCount">—</span>
+        </div>
+        <div id="ordersRoot" class="orders"></div>
+      </section>
+    </div>
+  </main>
+
+  <script src="/firebase-config.js"></script>
+  <script type="module" src="/firebase-init.js"></script>
+  <script>
+    const statusLine = document.getElementById("statusLine");
+    const ordersRoot = document.getElementById("ordersRoot");
+    const loggedInPill = document.getElementById("loggedInPill");
+    const ordersCount = document.getElementById("ordersCount");
+
+    function fmtINR(n){ return "₹" + Number(n || 0).toLocaleString("en-IN"); }
+    function esc(v){ return String(v || "").replace(/[&<>"']/g, (ch) => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[ch])); }
+
+    function statusClass(status){
+      const s = String(status || "pending").toLowerCase();
+      if (s.includes("paid") || s.includes("success") || s.includes("completed")) return "ok";
+      if (s.includes("fail") || s.includes("cancel")) return "bad";
+      return "warn";
+    }
+
+    function redirectToLogin(){
+      window.location.href = "/#/login";
+    }
+
+    async function fetchUserOrders(){
+      if (!window.firebaseApi?.getMyOrders) return [];
+      return await window.firebaseApi.getMyOrders();
+    }
+
+    function renderOrders(orders){
+      const list = Array.isArray(orders) ? orders : [];
+      ordersCount.textContent = `${list.length} orders`;
+      if (!list.length){
+        ordersRoot.innerHTML = '<div class="empty">No orders yet. Start shopping and your orders will appear here.</div>';
+        return;
+      }
+      ordersRoot.innerHTML = list.map((o) => {
+        const total = o.totalAmount ?? o.total ?? 0;
+        const status = o.status ?? (o.paymentStatus ? o.paymentStatus : "pending");
+        const dateRaw = o.createdAt?.toDate ? o.createdAt.toDate() : (o.createdAt?.seconds ? new Date(o.createdAt.seconds * 1000) : new Date(o.createdAt || o.date || Date.now()));
+        const dateText = isNaN(dateRaw.getTime()) ? "—" : dateRaw.toLocaleString();
+        return `
+          <article class="order">
+            <div class="row">
+              <strong>${esc(o.id || o.orderId || "—")}</strong>
+              <span class="status ${statusClass(status)}">${esc(status)}</span>
+            </div>
+            <div class="row" style="margin-top:8px;">
+              <span class="muted">${esc(dateText)}</span>
+              <strong style="color:var(--gold);">${esc(fmtINR(total))}</strong>
+            </div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    async function loadOrders(){
+      ordersRoot.innerHTML = '<div class="empty"><span class="spinner" style="vertical-align:middle;"></span> Loading orders…</div>';
+      try{
+        const orders = await fetchUserOrders();
+        renderOrders(orders);
+      }catch(e){
+        console.error("orders load failed", e);
+        ordersRoot.innerHTML = `<div class="empty danger">${esc(e?.message || "Unable to load orders")}</div>`;
+      }
+    }
+
+    function renderUser(user){
+      if (!user){
+        loggedInPill.textContent = "Logged out";
+        document.getElementById("userEmail").textContent = "—";
+        document.getElementById("userUid").textContent = "—";
+        document.getElementById("userStatus").textContent = "Not signed in";
+        return;
+      }
+      loggedInPill.textContent = "Logged in";
+      document.getElementById("userEmail").textContent = user.email || "—";
+      document.getElementById("userUid").textContent = user.uid || "—";
+      document.getElementById("userStatus").textContent = "Authenticated";
+      statusLine.textContent = `Welcome, ${user.email || "user"}`;
+    }
+
+    document.getElementById("logoutBtn").addEventListener("click", async () => {
+      const btn = document.getElementById("logoutBtn");
+      btn.disabled = true;
+      const old = btn.textContent;
+      btn.innerHTML = '<span class="spinner"></span> Logging out';
+      try{
+        await window.firebaseApi.signOutUser();
+        window.location.href = "/";
+      }catch(e){
+        console.error("logout failed", e);
+        btn.disabled = false;
+        btn.textContent = old;
+        alert(e?.message || "Logout failed");
+      }
+    });
+
+    async function waitForAuthUser(){
+      // Prefer the auth subscription to avoid timing races during session restore.
+      if (window.firebaseApi?.subscribeAuth) {
+        return await new Promise((resolve) => {
+          let settled = false;
+          window.firebaseApi.subscribeAuth((u) => {
+            if (settled) return;
+            settled = true;
+            resolve(u || null);
+          });
+          // Safety: if callback never fires, fall back to current user after a tick.
+          setTimeout(() => {
+            if (settled) return;
+            settled = true;
+            resolve(window.firebaseApi?.getCurrentUser?.() || null);
+          }, 1200);
+        });
+      }
+      return window.firebaseApi?.getCurrentUser?.() || null;
+    }
+
+    (async function init(){
+      try{
+        statusLine.textContent = "Loading your account…";
+        await window.firebaseReady;
+        const user = await waitForAuthUser();
+        if (!user) return redirectToLogin();
+        renderUser(user);
+        await loadOrders();
+      }catch(e){
+        console.error("profile init failed", e);
+        statusLine.textContent = e?.message || "Unable to load profile.";
+      }
+    })();
+  </script>
+</body>
+</html>
+

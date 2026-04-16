@@ -16,15 +16,19 @@ function applyCoupon(total, code) {
   return { total, discount: 0, message: "Invalid coupon code" };
 }
 
-function payWithRazorpay({ amount, customer, keyId, orderId, currency = "INR" }) {
+function payWithRazorpay({ amountPaise, customer, keyId, orderId, currency = "INR" }) {
   return new Promise((resolve, reject) => {
     if (!window.Razorpay) {
       reject(new Error("Razorpay SDK missing"));
       return;
     }
+    if (!Number.isFinite(Number(amountPaise)) || Number(amountPaise) <= 0) {
+      reject(new Error("Invalid payment amount"));
+      return;
+    }
     const rzp = new window.Razorpay({
       key: keyId || RAZORPAY_FALLBACK_TEST_KEY,
-      amount: amount * 100,
+      amount: Number(amountPaise),
       currency,
       ...(orderId ? { order_id: orderId } : {}),
       name: "VASTRA",
@@ -39,7 +43,9 @@ function payWithRazorpay({ amount, customer, keyId, orderId, currency = "INR" })
         }
       }
     });
-    rzp.on("payment.failed", (event) => reject(new Error(event.error.description || "Payment failed")));
+    rzp.on("payment.failed", (event) => {
+      reject(new Error(event?.error?.description || "Payment failed. Try again"));
+    });
     rzp.open();
   });
 }
@@ -147,30 +153,51 @@ export function checkoutPage(app) {
       if (!window.firebaseApi?.finalizePaidOrder) {
         throw new Error("Order service unavailable. Please refresh.");
       }
-      console.log("[VASTRA][checkout] creating payment order");
+      // SECURITY: pricing + order creation happens server-side only.
+      console.log("[VASTRA][checkout] creating payment order (server-priced)");
       const paymentOrder = await window.firebaseApi.createPaymentOrder();
+
+      const razorpay_order_id = paymentOrder?.razorpay_order_id;
+      const amount = Number(paymentOrder?.amount || 0); // paise from backend
+      const currency = paymentOrder?.currency || "INR";
+      const key_id = paymentOrder?.key_id || paymentOrder?.keyId;
+
+      if (!razorpay_order_id || !amount || !currency) {
+        throw new Error("Payment order invalid. Please retry.");
+      }
+
+      // Keep UI consistent with what Razorpay will actually charge.
+      finalTotal = Math.round(amount / 100);
+      document.getElementById("finalAmount").textContent = `₹${finalTotal.toLocaleString("en-IN")}`;
+
       const payment = await payWithRazorpay({
-        amount: finalTotal,
+        amountPaise: amount,
         customer: details,
-        keyId: paymentOrder?.key_id || paymentOrder?.keyId,
-        orderId: paymentOrder?.razorpay_order_id || paymentOrder?.order?.id || undefined,
-        currency: paymentOrder?.currency || paymentOrder?.order?.currency || "INR"
+        keyId: key_id,
+        orderId: razorpay_order_id,
+        currency
       });
-      console.log("[VASTRA][checkout] finalizing order");
+
+      console.log("[VASTRA][checkout] finalizing order (server-verified)");
       const orderId = await window.firebaseApi.finalizePaidOrder({
         userInfo: { ...details, coupon: appliedCoupon },
         payment: {
-          orderId: payment.razorpay_order_id || "",
+          orderId: payment.razorpay_order_id || razorpay_order_id || "",
           paymentId: payment.razorpay_payment_id || "",
           signature: payment.razorpay_signature || ""
         }
       });
-      setJson(LAST_ORDER_KEY, { id: orderId, totalAmount: finalTotal });
+
+      // The backend stores the order at users/{uid}/orders/{paymentId} and returns orderId=paymentId.
+      setJson(LAST_ORDER_KEY, { id: orderId, totalAmount: Math.round(amount / 100) });
       showToast("Order placed");
-      location.hash = "#/success";
+      window.location.href = `/success.html?orderId=${encodeURIComponent(orderId)}`;
     } catch (error) {
       errorEl.textContent = error.message;
       showToast(error.message);
+      if (String(error?.message || "").toLowerCase().includes("payment failed")) {
+        alert("Payment failed. Try again");
+      }
     } finally {
       payBtn.disabled = false;
       payBtn.textContent = "Pay Now";

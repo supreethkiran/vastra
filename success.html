@@ -37,6 +37,7 @@
       <h1>Payment Successful</h1>
       <p>Your order has been confirmed and is now being processed.</p>
       <p class="order-id" id="orderIdText">Order ID: --</p>
+      <p class="order-id" id="orderStatusText" style="color: rgba(240, 236, 228, 0.75); font-weight: 600;">Status: --</p>
       <div id="orderProducts" class="list"></div>
       <p class="total" id="orderTotal">Total Paid: ₹0</p>
       <div class="actions">
@@ -57,13 +58,18 @@
 
     async function loadOrder() {
       if (!orderIdParam || !window.firebaseApi?.getOrderById) {
-        document.getElementById("orderProducts").innerHTML = "<p>No order items found.</p>";
+        document.getElementById("orderProducts").innerHTML = "<p>Order not found</p>";
         return;
       }
       try {
         const order = await window.firebaseApi.getOrderById(orderIdParam);
-        if (!order || !Array.isArray(order.items) || !order.items.length) {
-          document.getElementById("orderProducts").innerHTML = "<p>No order items found.</p>";
+        if (!order) {
+          document.getElementById("orderProducts").innerHTML = "<p>Order not found</p>";
+          return;
+        }
+        document.getElementById("orderStatusText").textContent = "Status: " + String(order.status || "paid");
+        if (!Array.isArray(order.items) || !order.items.length) {
+          document.getElementById("orderProducts").innerHTML = "<p>Order not found</p>";
           return;
         }
         document.getElementById("orderProducts").innerHTML = order.items
@@ -76,7 +82,7 @@
           .join("");
         document.getElementById("orderTotal").textContent = "Total Paid: " + window.VastraCart.formatPrice(order.total || 0);
       } catch (error) {
-        document.getElementById("orderProducts").innerHTML = `<p>${error.message || "Unable to load order."}</p>`;
+        document.getElementById("orderProducts").innerHTML = `<p>${error.message || "Order not found"}</p>`;
       }
     }
     loadOrder();

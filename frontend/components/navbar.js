@@ -23,6 +23,7 @@ export function renderNavbar(onNavigate) {
           <span id="navCartCount" class="nav-cart-count" style="${cartCount > 0 ? "" : "display:none;"}">${cartCount}</span>
         </button>
         <a href="#/wishlist">Wishlist</a>
+        ${user ? '<a href="/profile.html">Profile</a>' : ""}
         <a href="#/orders">My Orders</a>
         <a href="#/track">Track Order</a>
         <a href="#/legal/privacy">Legal</a>
@@ -46,6 +47,7 @@ export function renderNavbar(onNavigate) {
         <a class="btn ghost" href="#/">Shop</a>
         <button id="mobileCartBtn" class="btn ghost" type="button">Cart</button>
         <a class="btn ghost" href="#/wishlist">Wishlist</a>
+        ${user ? '<a class="btn ghost" href="/profile.html">Profile</a>' : ""}
         <a class="btn ghost" href="#/orders">My Orders</a>
         <a class="btn ghost" href="#/track">Track Order</a>
         <a class="btn ghost" href="#/legal/privacy">Legal</a>

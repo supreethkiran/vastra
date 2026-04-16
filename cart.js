@@ -55,36 +55,48 @@
   }
 
   function bindRemoteCart() {
-    let unsubscribe = () => {};
-    const tryBind = () => {
-      if (!global.firebaseApi || typeof global.firebaseApi.subscribeCart !== "function") return false;
-      unsubscribe();
-      unsubscribe = global.firebaseApi.subscribeCart((items) => setCart(items));
-      return true;
-    };
-    const handleSignedOut = () => {
-      setCart([]);
-    };
-    if (!tryBind()) {
-      window.addEventListener(
-        "load",
-        () => {
-          setTimeout(() => {
-            tryBind();
-          }, 250);
-        },
-        { once: true }
-      );
+    let unsubscribeCart = () => {};
+
+    function stopCart() {
+      try {
+        unsubscribeCart();
+      } catch {
+        // ignore
+      }
+      unsubscribeCart = () => {};
     }
-    if (global.firebaseApi?.subscribeAuth) {
-      global.firebaseApi.subscribeAuth((user) => {
-        if (!user) {
-          handleSignedOut();
-          return;
-        }
-        tryBind();
+
+    function startCart() {
+      if (!global.firebaseApi || typeof global.firebaseApi.subscribeCart !== "function") return;
+      stopCart();
+      unsubscribeCart = global.firebaseApi.subscribeCart((items) => {
+        console.log("Cart updated:", items);
+        setCart(items);
       });
     }
+
+    // FIX: ensure cart only binds after auth is ready
+    if (global.firebaseApi?.subscribeAuth) {
+      global.firebaseApi.subscribeAuth((user) => {
+        console.log("Current user:", global.firebaseApi?.getCurrentUser?.() || null);
+        if (!user) {
+          stopCart();
+          setCart([]);
+          return;
+        }
+        startCart();
+      });
+      return;
+    }
+
+    // Fallback if subscribeAuth isn't available for some reason.
+    window.addEventListener(
+      "load",
+      () => {
+        startCart();
+      },
+      { once: true }
+    );
   }
 
   function getCart() {
@@ -122,9 +134,22 @@
     }
     notify();
     try {
+      console.log("Current user:", ensureFirebaseApi().getCurrentUser?.() || null);
+      const payload = {
+        id: String(product.id),
+        productId: String(product.productId || product.id),
+        name: String(product.name || "Product"),
+        price: Number(product.price || 0),
+        image: String(product.image || "")
+      };
+      console.log("Product before cart:", payload);
       ensureFirebaseApi()
-        .upsertCartItem(product, qty)
-        .catch((error) => reportAsyncCartError(error, "Could not sync cart item."));
+        .upsertCartItem(payload, qty)
+        .then(() => console.log("Cart write success"))
+        .catch((error) => {
+          console.error("Cart write failed:", error);
+          reportAsyncCartError(error, "Could not sync cart item.");
+        });
       ensureFirebaseApi().trackEvent?.("add_to_cart", {
         productId: String(product.productId || product.id || ""),
         cartItemId: String(product.id || ""),

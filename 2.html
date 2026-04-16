@@ -608,7 +608,59 @@ function addRippleToButton(btn, clientX, clientY) {
   btn.appendChild(ripple);
   setTimeout(() => ripple.remove(), 650);
 }
-document.getElementById('addBtn').addEventListener('click',(e)=>{
+
+function ensureLoggedIn() {
+  try {
+    if (!window.firebaseApi?.getCurrentUser?.()) {
+      alert("Please login first");
+      return false;
+    }
+    return true;
+  } catch {
+    alert("Please login first");
+    return false;
+  }
+}
+
+function validateCartProduct(product) {
+  console.log(product);
+  const p = product && typeof product === "object" ? product : {};
+  if (!p.id || !p.name || !Number.isFinite(Number(p.price)) || Number(p.price) <= 0 || !p.image) {
+    throw new Error("Invalid product payload.");
+  }
+  return {
+    id: String(p.id),
+    productId: String(p.productId || p.id),
+    name: String(p.name),
+    price: Number(p.price),
+    image: String(p.image)
+  };
+}
+
+function mergeLocalCartItem(item, qtyDelta) {
+  if (!window.VastraCart?.getCart || !window.VastraCart?.saveCart) return;
+  const cart = window.VastraCart.getCart();
+  const existing = cart.find((c) => String(c.id) === String(item.id));
+  if (existing) existing.qty = Math.max(1, Number(existing.qty || 1) + Number(qtyDelta || 1));
+  else cart.push({ ...item, qty: Math.max(1, Number(qtyDelta || 1)) });
+  window.VastraCart.saveCart(cart);
+}
+
+async function handleAddToCart(productInput, qtyDelta = 1) {
+  try {
+    if (window.firebaseReady) await window.firebaseReady;
+    if (!ensureLoggedIn()) return;
+    console.log("Adding product:", productInput);
+    const item = validateCartProduct(productInput);
+    await window.firebaseApi.upsertCartItem(item, Number(qtyDelta || 1));
+    console.log("Added to cart successfully");
+    mergeLocalCartItem(item, Number(qtyDelta || 1));
+  } catch (err) {
+    console.error("Add to cart failed:", err);
+    alert(err?.message || "Add to cart failed");
+  }
+}
+document.getElementById('addBtn').addEventListener('click', async (e)=>{
   const cleanName=document.getElementById('productName').textContent.replace('\n',' ');
   const size=document.querySelector('.size-btn.active')?.textContent||'M';
   const numericPrice=Number((document.getElementById('productPrice').textContent || '').replace(/[^\d]/g,'')) || product.price;
@@ -622,7 +674,7 @@ document.getElementById('addBtn').addEventListener('click',(e)=>{
   const btn = document.getElementById('addBtn');
   btn.classList.remove('pulse'); void btn.offsetWidth; btn.classList.add('pulse');
   addRippleToButton(btn, e.clientX, e.clientY);
-  window.VastraCart.addToCart(item, qty);
+  await handleAddToCart(item, qty);
   showToast(`Added to cart ✅`);
 });
 document.getElementById('goToCartBtn').addEventListener('click',()=>{
@@ -859,6 +911,7 @@ async function renderRecommendations(currentProduct) {
       btn.textContent = 'Adding…';
       try {
         if (window.firebaseReady) await window.firebaseReady;
+        if (!ensureLoggedIn()) return;
         if (!window.firebaseApi?.upsertCartItem) throw new Error('Cart unavailable');
 
         const cleanName = document.getElementById('productName')?.textContent?.replace('\n',' ') || String(currentProduct?.name || 'Product');
@@ -869,7 +922,7 @@ async function renderRecommendations(currentProduct) {
           price: Number(currentPrice || 0),
           image: currentProduct.img || currentProduct.image || ''
         };
-        await window.firebaseApi.upsertCartItem(currentItem, 1);
+        await handleAddToCart(currentItem, 1);
         for (const p of recs) {
           const item = {
             id: `${p.id}-M`,
@@ -878,7 +931,7 @@ async function renderRecommendations(currentProduct) {
             price: Number(p.price || 0),
             image: p.image
           };
-          await window.firebaseApi.upsertCartItem(item, 1);
+          await handleAddToCart(item, 1);
         }
         showToast('Full outfit added ✅');
       } catch (e) {
@@ -896,8 +949,7 @@ async function renderRecommendations(currentProduct) {
         const p = recs.find((x) => String(x.id) === String(id));
         if (!p) return;
         const item = { id: `${p.id}-M`, productId: String(p.id), name: `${p.name} (M)`, price: Number(p.price || 0), image: p.image };
-        window.firebaseApi?.upsertCartItem?.(item, 1).catch(() => {});
-        window.VastraCart?.addToCart?.(item, 1);
+        handleAddToCart(item, 1);
         showToast(`Added to cart ✅`);
         btn.disabled = true;
         const old = btn.textContent;

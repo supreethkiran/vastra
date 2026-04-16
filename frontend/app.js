@@ -108,3 +108,16 @@ window.addEventListener("hashchange", router);
 window.addEventListener("load", router);
 window.addEventListener("offline", () => showToast("You are offline. Some actions may fail."));
 window.addEventListener("online", () => showToast("Back online."));
+
+// Ensure navbar + protected routes update after Firebase restores session.
+(async function bindAuthRerender() {
+  try {
+    if (window.firebaseReady) await window.firebaseReady;
+    window.firebaseApi?.subscribeAuth?.(() => {
+      // Re-run router to refresh navbar + auth-gated views.
+      router().catch(() => {});
+    });
+  } catch {
+    // ignore
+  }
+})();

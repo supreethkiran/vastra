@@ -66,6 +66,9 @@ app.get("/checkout.html", (req, res) => {
 app.get("/success.html", (req, res) => {
   return res.sendFile(path.join(__dirname, "../../success.html"));
 });
+app.get("/profile.html", (req, res) => {
+  return res.sendFile(path.join(__dirname, "../../profile.html"));
+});
 app.get("/firebase-config.js", (req, res) => {
   // Single source of truth: serve the committed firebase-config.js file.
   res.set("Cache-Control", "no-store, max-age=0");
