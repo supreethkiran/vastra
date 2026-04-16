@@ -51,10 +51,10 @@ export async function shopPage(app) {
   });
 
   function animateAddToCart(button) {
-    const cartLink = document.querySelector('a[href="#/cart"]');
-    if (!button || !cartLink) return;
+    const cartTarget = document.getElementById("navCartBtn") || document.querySelector('[href="#/cart"]');
+    if (!button || !cartTarget) return;
     const start = button.getBoundingClientRect();
-    const end = cartLink.getBoundingClientRect();
+    const end = cartTarget.getBoundingClientRect();
     const dot = document.createElement("span");
     dot.className = "flying-dot";
     dot.style.left = `${start.left + start.width / 2}px`;
@@ -100,9 +100,11 @@ export async function shopPage(app) {
     filterBtn.innerHTML = '<span class="spinner"></span>';
     productsEl.innerHTML = Array.from({ length: 8 }, () => '<div class="skeleton skeleton-card"></div>').join("");
     try {
+      console.log("Firebase API:", window.firebaseApi);
       const search = searchInput.value.trim();
       const category = categoryInput.value.trim();
       const data = await fetchProducts({ search, category });
+      console.log("Products loaded:", data.products);
       if (!data.products.length) {
         productsEl.innerHTML = `
           <div class="card empty-state">
@@ -137,9 +139,14 @@ export async function shopPage(app) {
           btn.disabled = true;
           const oldLabel = btn.textContent;
           btn.textContent = "Adding...";
-          addToCart(product);
-          animateAddToCart(btn);
-          showToast("Added to Cart");
+          try {
+            addToCart(product);
+            animateAddToCart(btn);
+            showToast("Added to Cart");
+          } catch (error) {
+            console.error("AUTH ERROR:", error);
+            showToast(error.message || "Unable to add to cart");
+          }
           setTimeout(() => {
             btn.disabled = false;
             btn.textContent = oldLabel;
@@ -147,9 +154,10 @@ export async function shopPage(app) {
         });
       });
     } catch (error) {
+      console.error("Failed to load products", error);
       productsEl.innerHTML = `
         <div class="card empty-state">
-          <p class="danger">Failed to load products: ${error.message}</p>
+          <p class="danger">Products unavailable</p>
           <button id="retryProductsBtn" class="btn" type="button">Retry</button>
         </div>
       `;

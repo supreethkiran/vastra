@@ -1,5 +1,3 @@
-import { api } from "./api.js";
-
 function normalizeProducts(raw) {
   const items = Array.isArray(raw) ? raw : [];
   return items
@@ -32,6 +30,12 @@ function filterProducts(products, params = {}) {
 }
 
 async function fetchProductsFromFirebase(params = {}) {
+  if (!window.firebaseApi?.getProducts) {
+    throw new Error("Products unavailable");
+  }
+  if (window.firebaseReady) {
+    await window.firebaseReady;
+  }
   const remote = await window.firebaseApi.getProducts();
   const normalized = normalizeProducts(remote);
   const filtered = filterProducts(normalized, params);
@@ -39,39 +43,24 @@ async function fetchProductsFromFirebase(params = {}) {
 }
 
 export async function fetchProducts(params = {}) {
-  const query = new URLSearchParams(params).toString();
-  try {
-    return await api(`/products${query ? `?${query}` : ""}`);
-  } catch (error) {
-    if (window.firebaseApi?.getProducts) {
-      return fetchProductsFromFirebase(params);
-    }
-    throw error;
-  }
+  return fetchProductsFromFirebase(params);
 }
 
 export async function fetchProduct(id) {
-  try {
-    return await api(`/products/${id}`);
-  } catch (error) {
-    if (window.firebaseApi?.getProducts) {
-      const { products } = await fetchProductsFromFirebase({});
-      const product = products.find((p) => String(p.id) === String(id)) || null;
-      if (!product) throw new Error("Product not found.");
-      return { product };
-    }
-    throw error;
-  }
+  const { products } = await fetchProductsFromFirebase({});
+  const product = products.find((p) => String(p.id) === String(id)) || null;
+  if (!product) throw new Error("Product not found.");
+  return { product };
 }
 
 export function createProduct(payload) {
-  return api("/products", { method: "POST", body: JSON.stringify(payload) });
+  throw new Error("Product write is disabled in Firebase-only mode.");
 }
 
 export function updateProduct(id, payload) {
-  return api(`/products/${id}`, { method: "PUT", body: JSON.stringify(payload) });
+  throw new Error("Product write is disabled in Firebase-only mode.");
 }
 
 export function deleteProduct(id) {
-  return api(`/products/${id}`, { method: "DELETE" });
+  throw new Error("Product write is disabled in Firebase-only mode.");
 }

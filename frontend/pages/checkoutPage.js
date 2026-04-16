@@ -1,7 +1,5 @@
-import { getLocalCart, setLocalCart } from "../services/cartService.js";
-import { createOrder } from "../services/orderService.js";
+import { getLocalCart } from "../services/cartService.js";
 import { showToast } from "../components/toast.js";
-import { api } from "../services/api.js";
 import { LAST_ORDER_KEY, setJson } from "../utils/storage.js";
 
 const RAZORPAY_FALLBACK_TEST_KEY = "rzp_test_1DP5mmOlF5G5ag";
@@ -143,35 +141,31 @@ export function checkoutPage(app) {
     `;
     document.body.appendChild(overlay);
     try {
-      const paymentOrder = await api("/payments/create-order", {
-        method: "POST",
-        body: JSON.stringify({ amount: finalTotal })
-      });
+      if (!window.firebaseApi?.createPaymentOrder) {
+        throw new Error("Checkout service unavailable. Please refresh.");
+      }
+      if (!window.firebaseApi?.finalizePaidOrder) {
+        throw new Error("Order service unavailable. Please refresh.");
+      }
+      console.log("[VASTRA][checkout] creating payment order");
+      const paymentOrder = await window.firebaseApi.createPaymentOrder();
       const payment = await payWithRazorpay({
         amount: finalTotal,
         customer: details,
-        keyId: paymentOrder?.keyId,
-        orderId: paymentOrder?.mode === "live" ? paymentOrder?.order?.id : undefined,
-        currency: paymentOrder?.order?.currency || "INR"
+        keyId: paymentOrder?.key_id || paymentOrder?.keyId,
+        orderId: paymentOrder?.razorpay_order_id || paymentOrder?.order?.id || undefined,
+        currency: paymentOrder?.currency || paymentOrder?.order?.currency || "INR"
       });
-      await api("/payments/verify", {
-        method: "POST",
-        body: JSON.stringify({
-          razorpay_order_id: payment.razorpay_order_id,
-          razorpay_payment_id: payment.razorpay_payment_id,
-          razorpay_signature: payment.razorpay_signature
-        })
-      }).catch(() => {});
-      const { order } = await createOrder({
-        products: cart,
-        totalAmount: finalTotal,
-        paymentId: payment.razorpay_payment_id,
-        razorpay_order_id: payment.razorpay_order_id,
-        razorpay_signature: payment.razorpay_signature,
-        address: { ...details, coupon: appliedCoupon }
+      console.log("[VASTRA][checkout] finalizing order");
+      const orderId = await window.firebaseApi.finalizePaidOrder({
+        userInfo: { ...details, coupon: appliedCoupon },
+        payment: {
+          orderId: payment.razorpay_order_id || "",
+          paymentId: payment.razorpay_payment_id || "",
+          signature: payment.razorpay_signature || ""
+        }
       });
-      setLocalCart([]);
-      setJson(LAST_ORDER_KEY, order);
+      setJson(LAST_ORDER_KEY, { id: orderId, totalAmount: finalTotal });
       showToast("Order placed");
       location.hash = "#/success";
     } catch (error) {

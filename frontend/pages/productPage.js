@@ -138,8 +138,13 @@ export async function productPage(app, id) {
       const btn = event.currentTarget;
       btn.disabled = true;
       btn.textContent = "Adding...";
-      addToCart({ ...product, selectedSize });
-      showToast("Added to Cart");
+      try {
+        addToCart({ ...product, selectedSize });
+        showToast("Added to Cart");
+      } catch (error) {
+        console.error("AUTH ERROR:", error);
+        showToast(error.message || "Unable to add to cart");
+      }
       setTimeout(() => {
         btn.disabled = false;
         btn.textContent = "Add to Cart";

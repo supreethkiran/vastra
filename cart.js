@@ -1,5 +1,6 @@
 /* Shared Firestore-backed cart utilities */
 (function initVastraCart(global) {
+  console.log("Firebase API:", global.firebaseApi);
   const state = {
     cart: [],
     lastOrder: null
@@ -36,6 +37,7 @@
 
   function setCart(items) {
     state.cart = (items || []).map(normalizeItem);
+    console.log("[VASTRA][cart] updated:", state.cart);
     notify();
   }
 

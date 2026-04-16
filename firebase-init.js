@@ -304,6 +304,19 @@ async function getOrderById(orderId) {
   return { id: snap.id, ...(snap.data() || {}) };
 }
 
+async function getMyOrders() {
+  if (!db) throw new Error("Firestore not initialized");
+  if (!authUser) throw new Error("Please sign in to view your orders.");
+  const snapshot = await getDocs(collection(db, "users", authUser.uid, "orders"));
+  const orders = snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...(docSnap.data() || {}) }));
+  orders.sort((a, b) => {
+    const at = a.createdAt?.toMillis ? a.createdAt.toMillis() : Number(new Date(a.createdAt || 0));
+    const bt = b.createdAt?.toMillis ? b.createdAt.toMillis() : Number(new Date(b.createdAt || 0));
+    return bt - at;
+  });
+  return orders;
+}
+
 function getCurrentUser() {
   return authUser;
 }
@@ -432,6 +445,7 @@ window.firebaseApi = {
   createPaymentOrder,
   finalizePaidOrder,
   getOrderById,
+  getMyOrders,
   getCurrentUser,
   subscribeAuth,
   signUpWithEmail,

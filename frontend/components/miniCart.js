@@ -1,4 +1,4 @@
-import { getLocalCart, setLocalCart, syncCartToBackend } from "../services/cartService.js";
+import { getLocalCart, removeCartItem, setCartItemQty, subscribeCart } from "../services/cartService.js";
 import { showToast } from "./toast.js";
 
 const FREE_SHIPPING_THRESHOLD = 999;
@@ -67,21 +67,15 @@ export function mountMiniCart() {
   };
 
   function setQty(id, nextQty) {
-    const current = getLocalCart();
-    const next = current
-      .map((item) => (String(item.id) === String(id) ? { ...item, qty: Math.max(0, Number(nextQty || 0)) } : item))
-      .filter((item) => Number(item.qty || 0) > 0);
-    setLocalCart(next);
-    syncCartToBackend().catch(() => {});
+    setCartItemQty(id, nextQty).catch((error) => showToast(error.message || "Unable to update cart"));
   }
 
   function removeItem(rowEl, id) {
     if (rowEl) rowEl.classList.add("removing");
     window.setTimeout(() => {
-      const next = getLocalCart().filter((item) => String(item.id) !== String(id));
-      setLocalCart(next);
-      syncCartToBackend().catch(() => {});
-      showToast("Removed from cart");
+      removeCartItem(id)
+        .then(() => showToast("Removed from cart"))
+        .catch((error) => showToast(error.message || "Unable to remove item"));
     }, 160);
   }
 
@@ -178,8 +172,7 @@ export function mountMiniCart() {
     if (event.key === "Escape") close();
   });
 
-  window.addEventListener("cart-updated", (event) => {
-    const nextCart = event.detail || [];
+  subscribeCart((nextCart) => {
     updateNavCount(nextCart);
     if (drawer.classList.contains("open")) render(nextCart);
   });

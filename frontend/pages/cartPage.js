@@ -1,4 +1,4 @@
-import { getLocalCart, setLocalCart, syncCartToBackend } from "../services/cartService.js";
+import { getLocalCart, removeCartItem, setCartItemQty, subscribeCart } from "../services/cartService.js";
 import { showToast } from "../components/toast.js";
 
 const FREE_SHIPPING_THRESHOLD = 999;
@@ -9,23 +9,26 @@ function total(cart) {
 
 export async function cartPage(app) {
   const cart = getLocalCart();
-  if (!cart.length) {
-    app.innerHTML = `
-      <h1 class="section-title">Cart</h1>
-      <div class="card empty-state fade-in">
-        <p class="muted">Your cart is empty.</p>
-        <a href="#/" class="btn" style="display:inline-block;margin-top:8px;">Continue Shopping</a>
-      </div>
-    `;
-    return;
-  }
 
   const cartTotal = total(cart);
   const remaining = Math.max(0, FREE_SHIPPING_THRESHOLD - cartTotal);
 
-  app.innerHTML = `
-    <h1 class="section-title">Cart</h1>
-    <div class="stack fade-in">
+  function render(cartItems) {
+    if (!cartItems.length) {
+      app.innerHTML = `
+        <h1 class="section-title">Cart</h1>
+        <div class="card empty-state fade-in">
+          <p class="muted">Your cart is empty.</p>
+          <a href="#/" class="btn" style="display:inline-block;margin-top:8px;">Continue Shopping</a>
+        </div>
+      `;
+      return;
+    }
+    const cartTotal = total(cartItems);
+    const remaining = Math.max(0, FREE_SHIPPING_THRESHOLD - cartTotal);
+    app.innerHTML = `
+      <h1 class="section-title">Cart</h1>
+      <div class="stack fade-in">
       <div class="card" style="padding:12px;">
         <div class="row">
           <span class="muted">${remaining > 0 ? `You're ₹${remaining.toLocaleString("en-IN")} away from free shipping` : "You unlocked free shipping"}</span>
@@ -35,7 +38,7 @@ export async function cartPage(app) {
           <span style="width:${Math.min(100, Math.round((cartTotal / FREE_SHIPPING_THRESHOLD) * 100))}%;"></span>
         </div>
       </div>
-      ${cart
+      ${cartItems
         .map(
           (item) => `
           <article class="card row" data-row="${item.id}" style="padding:12px;align-items:flex-start;">
@@ -70,37 +73,27 @@ export async function cartPage(app) {
     </div>
   `;
 
-  function updateCart(nextCart) {
-    setLocalCart(nextCart);
-    cartPage(app);
+    cartItems.forEach((item) => {
+      app.querySelector(`[data-inc="${item.id}"]`)?.addEventListener("click", () => {
+        setCartItemQty(item.id, Number(item.qty || 0) + 1).catch((error) => showToast(error.message || "Unable to update cart"));
+      });
+      app.querySelector(`[data-dec="${item.id}"]`)?.addEventListener("click", () => {
+        setCartItemQty(item.id, Number(item.qty || 0) - 1).catch((error) => showToast(error.message || "Unable to update cart"));
+      });
+      app.querySelector(`[data-remove="${item.id}"]`)?.addEventListener("click", () => {
+        const row = app.querySelector(`[data-row="${CSS.escape(String(item.id))}"]`);
+        row?.classList.add("removing");
+        setTimeout(() => {
+          removeCartItem(item.id).catch((error) => showToast(error.message || "Unable to remove item"));
+        }, 160);
+      });
+    });
+
+    document.getElementById("checkoutBtn")?.addEventListener("click", async () => {
+      location.hash = "#/checkout";
+    });
   }
 
-  cart.forEach((item) => {
-    app.querySelector(`[data-inc="${item.id}"]`)?.addEventListener("click", () => {
-      const next = getLocalCart().map((c) => (c.id === item.id ? { ...c, qty: c.qty + 1 } : c));
-      updateCart(next);
-    });
-    app.querySelector(`[data-dec="${item.id}"]`)?.addEventListener("click", () => {
-      const next = getLocalCart()
-        .map((c) => (c.id === item.id ? { ...c, qty: c.qty - 1 } : c))
-        .filter((c) => c.qty > 0);
-      updateCart(next);
-    });
-    app.querySelector(`[data-remove="${item.id}"]`)?.addEventListener("click", () => {
-      const row = app.querySelector(`[data-row="${CSS.escape(String(item.id))}"]`);
-      row?.classList.add("removing");
-      setTimeout(() => {
-        updateCart(getLocalCart().filter((c) => c.id !== item.id));
-      }, 160);
-    });
-  });
-
-  document.getElementById("checkoutBtn").addEventListener("click", async () => {
-    const btn = document.getElementById("checkoutBtn");
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span>';
-    await syncCartToBackend().catch(() => {});
-    showToast("Cart synced");
-    location.hash = "#/checkout";
-  });
+  render(cart);
+  subscribeCart(render);
 }

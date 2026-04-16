@@ -1,7 +1,6 @@
 import { renderNavbar } from "./components/navbar.js";
 import { showToast } from "./components/toast.js";
 import { getCurrentUser } from "./services/authService.js";
-import { fetchBackendCart, syncCartToBackend } from "./services/cartService.js";
 import { mountMiniCart } from "./components/miniCart.js";
 import { shopPage } from "./pages/shopPage.js";
 import { productPage } from "./pages/productPage.js";
@@ -38,7 +37,6 @@ async function router() {
   try {
     app.classList.add("route-enter");
     app.innerHTML = '<p class="muted fade-in">Loading...</p>';
-    if (user) await fetchBackendCart().catch(() => {});
 
     if (!route) return shopPage(app);
     if (route === "login") return loginPage(app);
@@ -81,9 +79,6 @@ async function router() {
     showToast(error.message);
   } finally {
     setTimeout(() => app.classList.remove("route-enter"), 280);
-    if (getCurrentUser()) {
-      await syncCartToBackend().catch(() => {});
-    }
   }
 }
 

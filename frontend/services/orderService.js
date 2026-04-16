@@ -1,13 +1,11 @@
-import { api } from "./api.js";
-
-export function createOrder(payload) {
-  return api("/orders", { method: "POST", body: JSON.stringify(payload) });
+export async function fetchMyOrders() {
+  if (!window.firebaseApi?.getMyOrders) {
+    throw new Error("Orders unavailable");
+  }
+  const orders = await window.firebaseApi.getMyOrders();
+  return { orders };
 }
 
-export function fetchMyOrders() {
-  return api("/orders/my");
-}
-
-export function fetchAllOrders() {
-  return api("/orders");
+export async function fetchAllOrders() {
+  throw new Error("Admin orders unavailable in Firebase-only mode.");
 }
