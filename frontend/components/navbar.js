@@ -1,4 +1,5 @@
 import { getCurrentUser, logout } from "../services/authService.js";
+import { showToast } from "./toast.js";
 import { fetchProducts } from "../services/productService.js";
 import { getLocalCart } from "../services/cartService.js";
 
@@ -67,6 +68,7 @@ export function renderNavbar(onNavigate) {
   if (btn) {
     btn.addEventListener("click", () => {
       logout();
+      showToast("Logged out successfully");
       onNavigate("#/login");
     });
   }
@@ -107,6 +109,7 @@ export function renderNavbar(onNavigate) {
   document.getElementById("mobileLogoutBtn")?.addEventListener("click", () => {
     closeMobile();
     logout();
+    showToast("Logged out successfully");
     onNavigate("#/login");
   });
 

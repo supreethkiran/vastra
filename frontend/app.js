@@ -15,6 +15,7 @@ import { trackPage } from "./pages/trackPage.js";
 import { legalPage } from "./pages/legalPage.js";
 
 const app = document.getElementById("app");
+window.__vastraLastNonAuthHash = window.__vastraLastNonAuthHash || "#/";
 
 function bindRipplesOnce() {
   if (window.__vastraRipplesBound) return;
@@ -39,6 +40,15 @@ function bindRipplesOnce() {
 
 function requireAuth() {
   if (!getCurrentUser()) {
+    // Remember intent so we can redirect after login.
+    try {
+      const intended = location.hash || "#/";
+      if (intended && intended !== "#/login" && intended !== "#/signup") {
+        sessionStorage.setItem("vastra_post_auth_redirect", intended);
+      }
+    } catch {
+      // ignore
+    }
     location.hash = "#/login";
     return false;
   }
@@ -58,6 +68,10 @@ async function router() {
   const hash = location.hash || "#/";
   const user = getCurrentUser();
   const [, route, id, sub] = hash.split("/");
+
+  if (route !== "login" && route !== "signup") {
+    window.__vastraLastNonAuthHash = hash;
+  }
 
   try {
     app.classList.add("route-enter");

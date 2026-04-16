@@ -16,7 +16,11 @@ import {
   onAuthStateChanged,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  signOut
+  signOut,
+  GoogleAuthProvider,
+  signInWithPopup,
+  RecaptchaVerifier,
+  signInWithPhoneNumber
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 
 const DEFAULT_CONFIG = {
@@ -127,6 +131,53 @@ function ensureAuthInitialized() {
     throw new Error("Firebase Auth not initialized");
   }
   return auth;
+}
+
+async function signInWithGoogle() {
+  await ensureFirebaseReady();
+  const authInstance = ensureAuthInitialized();
+  const provider = new GoogleAuthProvider();
+  try {
+    const result = await signInWithPopup(authInstance, provider);
+    return result.user;
+  } catch (error) {
+    console.error("Google sign-in failed:", error);
+    throw error;
+  }
+}
+
+function setupRecaptcha(containerId = "recaptcha-container") {
+  const authInstance = ensureAuthInitialized();
+  const el = document.getElementById(containerId);
+  if (!el) throw new Error("reCAPTCHA container missing");
+  if (!window.recaptchaVerifier) {
+    window.recaptchaVerifier = new RecaptchaVerifier(
+      containerId,
+      { size: "invisible" },
+      authInstance
+    );
+  }
+  return window.recaptchaVerifier;
+}
+
+async function sendOTP(phoneNumber, options = {}) {
+  await ensureFirebaseReady();
+  const authInstance = ensureAuthInitialized();
+  const normalized = String(phoneNumber || "").trim();
+  if (!normalized) throw new Error("Phone number is required.");
+  const appVerifier = setupRecaptcha(options.containerId || "recaptcha-container");
+  const confirmationResult = await signInWithPhoneNumber(authInstance, normalized, appVerifier);
+  window.confirmationResult = confirmationResult;
+  return true;
+}
+
+async function verifyOTP(code) {
+  await ensureFirebaseReady();
+  const value = String(code || "").trim();
+  if (!value) throw new Error("OTP code is required.");
+  if (!window.confirmationResult) throw new Error("OTP not requested. Please send OTP first.");
+  const result = await window.confirmationResult.confirm(value);
+  return result.user;
 }
 
 async function ensureFirebaseReady() {
@@ -525,6 +576,9 @@ window.firebaseApi = {
   getCurrentUser,
   subscribeAuth,
   waitForAuth,
+  signInWithGoogle,
+  sendOTP,
+  verifyOTP,
   signUpWithEmail,
   signInWithEmail,
   signOutUser,
