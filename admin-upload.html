@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VASTRA — Upload Product</title>
+  <style>
+    :root{
+      --bg:#060608;--surface:#101118;--surface2:#171925;--text:#f0ece4;--muted:rgba(240,236,228,.65);
+      --gold:#c9a96e;--border:rgba(255,255,255,.12);--danger:#ff6b7a;--ok:#57d39b;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:var(--bg);color:var(--text);font-family:Arial,sans-serif}
+    .wrap{max-width:860px;margin:0 auto;padding:26px 16px 80px}
+    .top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+    .title{font-size:28px;letter-spacing:.03em}
+    .muted{color:var(--muted)}
+    .link{color:var(--gold);text-decoration:none;font-size:14px}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;box-shadow:0 12px 28px rgba(0,0,0,.32)}
+    label{display:block;font-size:12px;color:var(--muted);margin:10px 0 6px}
+    input,textarea,select{width:100%;border-radius:12px;border:1px solid var(--border);background:var(--surface2);color:var(--text);padding:12px;outline:none}
+    textarea{min-height:110px;resize:vertical}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .btn{border:1px solid var(--border);background:transparent;color:var(--text);border-radius:12px;padding:12px 14px;cursor:pointer;font-weight:800;letter-spacing:.08em;text-transform:uppercase;font-size:11px}
+    .btn.primary{background:var(--gold);border-color:var(--gold);color:#111}
+    .btn:disabled{opacity:.65;cursor:not-allowed}
+    .status{margin-top:10px;font-size:13px;min-height:18px}
+    .danger{color:var(--danger)}
+    .ok{color:var(--ok)}
+    .spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.28);border-top-color:#fff;border-radius:50%;display:inline-block;animation:spin .7s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    @media (max-width:720px){.row{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="top">
+      <div>
+        <h1 class="title">Upload Product</h1>
+        <p class="muted" id="statusLine">Checking admin access…</p>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <a class="link" href="./admin.html">Back to Admin</a>
+        <a class="link" href="./1.html">Back to Store</a>
+      </div>
+    </div>
+
+    <section class="card">
+      <form id="uploadForm">
+        <label>Name</label>
+        <input name="name" placeholder="Noir Oversized Hoodie" required />
+
+        <div class="row">
+          <div>
+            <label>Price (₹)</label>
+            <input name="price" type="number" placeholder="1799" required />
+          </div>
+          <div>
+            <label>Category</label>
+            <label for="categorySelect" style="position:absolute;left:-9999px;">Category</label>
+            <select id="categorySelect" name="category" aria-label="Category">
+              <option>Hoodies</option>
+              <option>Bottoms</option>
+              <option>Essentials</option>
+              <option>Outerwear</option>
+            </select>
+          </div>
+        </div>
+
+        <label>Image URL</label>
+        <input name="image" placeholder="https://…" required />
+
+        <label>Secondary Image URL (optional)</label>
+        <input name="secondaryImage" placeholder="https://…" />
+
+        <label>Description</label>
+        <textarea name="description" placeholder="Premium fabric, tailored fit…"></textarea>
+
+        <div class="row">
+          <div>
+            <label>Badge (optional)</label>
+            <input name="badge" placeholder="New / Trending" />
+          </div>
+          <div>
+            <label>Badge Type (optional)</label>
+            <input name="badgeType" placeholder="new / trending" />
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>Stock (optional)</label>
+            <input name="stock" type="number" placeholder="12" />
+          </div>
+          <div>
+            <label>Third Image URL (optional)</label>
+            <input name="thirdImage" placeholder="https://…" />
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
+          <button id="submitBtn" class="btn primary" type="submit">Save to Firestore</button>
+          <button class="btn" type="reset">Reset</button>
+        </div>
+        <p id="formStatus" class="status muted"></p>
+      </form>
+    </section>
+  </main>
+
+  <script src="/firebase-config.js"></script>
+  <script type="module" src="/firebase-init.js"></script>
+  <script>
+    const ADMIN_EMAILS = ["admin@vastra.com", "admin@vastra.shop"];
+    const statusLine = document.getElementById("statusLine");
+    const formStatus = document.getElementById("formStatus");
+    const submitBtn = document.getElementById("submitBtn");
+
+    function redirectHome() {
+      window.location.replace("./1.html");
+    }
+
+    async function init() {
+      try {
+        await window.firebaseReady;
+        const user = window.firebaseApi?.getCurrentUser?.();
+        const email = String(user?.email || "").toLowerCase();
+        if (!user || !ADMIN_EMAILS.includes(email)) return redirectHome();
+        statusLine.textContent = `Signed in as ${email}`;
+        console.log("Firebase API:", window.firebaseApi);
+      } catch (e) {
+        statusLine.textContent = e?.message || "Unable to initialize.";
+      }
+    }
+
+    document.getElementById("uploadForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      formStatus.className = "status muted";
+      formStatus.textContent = "";
+      if (!window.firebaseApi?.createProduct) {
+        formStatus.className = "status danger";
+        formStatus.textContent = "Uploader unavailable. Please refresh.";
+        return;
+      }
+      const fd = new FormData(event.target);
+      const payload = Object.fromEntries(fd.entries());
+      payload.price = Number(payload.price || 0);
+      payload.stock = Number(payload.stock || 0);
+
+      submitBtn.disabled = true;
+      const old = submitBtn.textContent;
+      submitBtn.innerHTML = '<span class="spinner"></span> Saving…';
+      try {
+        const result = await window.firebaseApi.createProduct(payload);
+        formStatus.className = "status ok";
+        formStatus.textContent = `Saved. Product ID: ${result.id}`;
+      } catch (e) {
+        console.error("AUTH ERROR:", e);
+        formStatus.className = "status danger";
+        formStatus.textContent = e?.message || "Failed to save product.";
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = old;
+      }
+    });
+
+    init();
+  </script>
+</body>
+</html>
+

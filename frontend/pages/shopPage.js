@@ -7,7 +7,7 @@ import { getRecentlyViewed } from "../services/recentService.js";
 
 export async function shopPage(app) {
   app.innerHTML = `
-    <section class="hero">
+    <section class="hero" id="vastraHero">
       <div class="hero-inner hero-animate">
         <span class="hero-eyebrow">Premium drops • Limited stock</span>
         <h1 class="hero-title">Wear the statement. Own the room.</h1>
@@ -43,12 +43,29 @@ export async function shopPage(app) {
   const recentWrap = document.getElementById("recentWrap");
   const recommendedWrap = document.getElementById("recommendedWrap");
   const heroShopNowBtn = document.getElementById("heroShopNowBtn");
+  const heroEl = document.getElementById("vastraHero");
 
   heroShopNowBtn?.addEventListener("click", () => {
     const toolbar = document.querySelector(".toolbar");
     toolbar?.scrollIntoView({ behavior: "smooth", block: "start" });
     searchInput?.focus?.();
   });
+
+  // Parallax background (minimal JS)
+  if (heroEl && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    let raf = 0;
+    const onScroll = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        const rect = heroEl.getBoundingClientRect();
+        const progress = Math.max(-1, Math.min(1, rect.top / Math.max(1, window.innerHeight)));
+        heroEl.style.setProperty("--heroParallax", `${Math.round(progress * 28)}px`);
+      });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+  }
 
   function animateAddToCart(button) {
     const cartTarget = document.getElementById("navCartBtn") || document.querySelector('[href="#/cart"]');
@@ -142,6 +159,9 @@ export async function shopPage(app) {
           try {
             addToCart(product);
             animateAddToCart(btn);
+            btn.classList.remove("pulse");
+            void btn.offsetWidth;
+            btn.classList.add("pulse");
             showToast("Added to Cart");
           } catch (error) {
             console.error("AUTH ERROR:", error);

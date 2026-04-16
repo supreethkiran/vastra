@@ -140,6 +140,9 @@ export async function productPage(app, id) {
       btn.textContent = "Adding...";
       try {
         addToCart({ ...product, selectedSize });
+        btn.classList.remove("pulse");
+        void btn.offsetWidth;
+        btn.classList.add("pulse");
         showToast("Added to Cart");
       } catch (error) {
         console.error("AUTH ERROR:", error);

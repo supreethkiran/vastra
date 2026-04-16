@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>VASTRA Admin Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
   <style>
     :root {
       --bg: #060608;
@@ -21,7 +22,7 @@
     .title { font-size: 28px; letter-spacing: 0.03em; }
     .muted { color: var(--muted); }
     .link { color: var(--gold); text-decoration: none; font-size: 14px; }
-    .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 14px 0 20px; }
+    .grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 14px 0 16px; }
     .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px; box-shadow: 0 12px 28px rgba(0,0,0,0.32); }
     .metric-label { color: var(--muted); font-size: 12px; }
     .metric-value { margin-top: 4px; font-size: 22px; color: var(--gold); font-weight: 700; }
@@ -32,8 +33,19 @@
     th, td { text-align: left; padding: 10px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: top; }
     th { color: var(--muted); font-weight: 600; }
     .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface2); }
+    .pill.ok { border-color: rgba(87,211,155,.35); background: rgba(87,211,155,.10); }
+    .pill.warn { border-color: rgba(201,169,110,.35); background: rgba(201,169,110,.12); }
+    .pill.bad { border-color: rgba(255,107,122,.35); background: rgba(255,107,122,.10); }
     .empty { padding: 16px; color: var(--muted); border: 1px dashed var(--border); border-radius: 10px; }
-    @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+    .btn { border: 1px solid var(--border); background: transparent; color: var(--text); border-radius: 12px; padding: 10px 12px; cursor: pointer; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; font-size: 10px; }
+    .btn.primary { background: var(--gold); color: #111; border-color: var(--gold); }
+    .skeleton { border-radius: 12px; border: 1px solid var(--border); background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 40%, rgba(255,255,255,0.04) 65%); background-size: 300% 100%; animation: shimmer 1.1s infinite; }
+    .skeleton-line { height: 14px; }
+    .chart-card { padding: 14px; }
+    canvas { max-width: 100%; }
+    @keyframes shimmer { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
+    @media (max-width: 1100px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } table { min-width: 680px; } }
   </style>
 </head>
 <body>
@@ -43,7 +55,10 @@
         <h1 class="title">Admin Dashboard</h1>
         <p class="muted" id="adminStatus">Checking access...</p>
       </div>
-      <a class="link" href="./1.html">Back to Store</a>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;">
+        <a class="btn" href="./admin-upload.html">Upload Product</a>
+        <a class="btn primary" href="./1.html">Back to Store</a>
+      </div>
     </div>
 
     <section class="grid">
@@ -59,6 +74,45 @@
         <p class="metric-label">Total Revenue</p>
         <p class="metric-value" id="revTotal">₹0</p>
       </article>
+      <article class="card">
+        <p class="metric-label">Conversion Rate</p>
+        <p class="metric-value"><span id="conversion">0%</span></p>
+      </article>
+    </section>
+
+    <section class="grid">
+      <article class="card">
+        <p class="metric-label">Orders Today</p>
+        <p class="metric-value" id="ordersToday">0</p>
+      </article>
+      <article class="card">
+        <p class="metric-label">Total Orders</p>
+        <p class="metric-value" id="ordersTotal">0</p>
+      </article>
+      <article class="card">
+        <p class="metric-label">Total Users</p>
+        <p class="metric-value" id="usersTotal">0</p>
+      </article>
+      <article class="card">
+        <p class="metric-label">Top Product</p>
+        <p class="metric-value" id="topProduct">—</p>
+      </article>
+    </section>
+
+    <section class="section">
+      <h2>Performance</h2>
+      <div class="grid" style="grid-template-columns: repeat(2, minmax(0, 1fr));">
+        <article class="card chart-card">
+          <p class="metric-label">Revenue (last 14 days)</p>
+          <div id="revChartSkeleton" class="skeleton" style="height:220px;"></div>
+          <canvas id="revChart" height="110" style="display:none;"></canvas>
+        </article>
+        <article class="card chart-card">
+          <p class="metric-label">Top products (purchases)</p>
+          <div id="topChartSkeleton" class="skeleton" style="height:220px;"></div>
+          <canvas id="topChart" height="110" style="display:none;"></canvas>
+        </article>
+      </div>
     </section>
 
     <section class="section">
@@ -99,7 +153,7 @@
           <tbody id="eventsRows"><tr><td colspan="2" class="empty">Loading...</td></tr></tbody>
         </table>
       </div>
-      <p class="muted" style="margin-top:8px;">Checkout Conversion: <strong id="conversion">0%</strong></p>
+      <p class="muted" style="margin-top:8px;">Tip: If charts look empty, start testing add-to-cart and checkout flows to generate analytics.</p>
     </section>
   </main>
 
@@ -124,21 +178,33 @@
       document.getElementById("revToday").textContent = fmt(data?.revenue?.today || 0);
       document.getElementById("revWeek").textContent = fmt(data?.revenue?.weekly || 0);
       document.getElementById("revTotal").textContent = fmt(data?.revenue?.total || 0);
+      document.getElementById("conversion").textContent = `${Number(data?.analytics?.checkoutConversionRate || 0)}%`;
 
       const users = Array.isArray(data?.users) ? data.users : [];
+      document.getElementById("usersTotal").textContent = String(users.length || 0);
       document.getElementById("usersRows").innerHTML = users.length
         ? users.map((u) => `<tr><td>${esc(u.email)}</td><td><small>${esc(u.uid)}</small></td><td>${esc(u.createdAt)}</td></tr>`).join("")
         : '<tr><td colspan="3" class="empty">No users found.</td></tr>';
 
       const orders = Array.isArray(data?.orders) ? data.orders : [];
+      const today = new Date().toDateString();
+      const ordersToday = orders.filter((o) => new Date(o.date || o.createdAt || 0).toDateString() === today);
+      document.getElementById("ordersToday").textContent = String(ordersToday.length || 0);
+      document.getElementById("ordersTotal").textContent = String(orders.length || 0);
       document.getElementById("ordersRows").innerHTML = orders.length
-        ? orders.map((o) => `<tr><td><small>${esc(o.orderId)}</small></td><td>${esc(o.userId)}</td><td>${(o.items || []).length}</td><td>${fmt(o.total || 0)}</td><td><span class="pill">${esc(o.status)}</span></td><td>${esc(o.date)}</td></tr>`).join("")
+        ? orders.map((o) => {
+            const status = String(o.status || "pending").toLowerCase();
+            const cls = status.includes("paid") || status.includes("success") ? "ok" : status.includes("fail") ? "bad" : "warn";
+            return `<tr><td><small>${esc(o.orderId)}</small></td><td>${esc(o.userId)}</td><td>${(o.items || []).length}</td><td>${fmt(o.total || 0)}</td><td><span class="pill ${cls}">${esc(status)}</span></td><td>${esc(o.date)}</td></tr>`;
+          }).join("")
         : '<tr><td colspan="6" class="empty">No orders found.</td></tr>';
 
       const rows = [];
       (data?.analytics?.mostViewedProducts || []).forEach((p) => rows.push({ metric: "Most Viewed", productId: p.productId, count: p.count }));
       (data?.analytics?.mostAddedToCartProducts || []).forEach((p) => rows.push({ metric: "Most Added", productId: p.productId, count: p.count }));
       (data?.analytics?.mostPurchasedProducts || []).forEach((p) => rows.push({ metric: "Most Purchased", productId: p.productId, count: p.count }));
+      const topPurchased = (data?.analytics?.mostPurchasedProducts || [])[0];
+      document.getElementById("topProduct").textContent = topPurchased?.productId ? String(topPurchased.productId) : "—";
       document.getElementById("productsRows").innerHTML = rows.length
         ? rows.map((r) => `<tr><td>${esc(r.metric)}</td><td>${esc(r.productId)}</td><td>${esc(r.count)}</td></tr>`).join("")
         : '<tr><td colspan="3" class="empty">No product analytics yet.</td></tr>';
@@ -149,7 +215,69 @@
         ? eventKeys.map((key) => `<tr><td>${esc(key)}</td><td>${esc(events[key])}</td></tr>`).join("")
         : '<tr><td colspan="2" class="empty">No analytics events yet.</td></tr>';
 
-      document.getElementById("conversion").textContent = `${Number(data?.analytics?.checkoutConversionRate || 0)}%`;
+      renderCharts(data);
+    }
+
+    let revChart = null;
+    let topChart = null;
+
+    function renderCharts(data) {
+      if (!window.Chart) return;
+
+      const orders = Array.isArray(data?.orders) ? data.orders : [];
+      const daily = new Map();
+      const now = new Date();
+      for (let i = 13; i >= 0; i--) {
+        const d = new Date(now);
+        d.setDate(now.getDate() - i);
+        const key = d.toISOString().slice(0, 10);
+        daily.set(key, 0);
+      }
+      orders.forEach((o) => {
+        const date = new Date(o.date || o.createdAt || 0);
+        const key = date.toISOString().slice(0, 10);
+        if (daily.has(key)) daily.set(key, daily.get(key) + Number(o.total || 0));
+      });
+      const labels = Array.from(daily.keys()).map((k) => k.slice(5));
+      const values = Array.from(daily.values());
+
+      document.getElementById("revChartSkeleton").style.display = "none";
+      const revCanvas = document.getElementById("revChart");
+      revCanvas.style.display = "block";
+      if (revChart) revChart.destroy();
+      revChart = new Chart(revCanvas.getContext("2d"), {
+        type: "line",
+        data: { labels, datasets: [{ label: "Revenue (₹)", data: values, borderColor: "#c9a96e", tension: 0.35, fill: false }] },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: "rgba(240,236,228,.65)" }, grid: { color: "rgba(255,255,255,.08)" } },
+            y: { ticks: { color: "rgba(240,236,228,.65)" }, grid: { color: "rgba(255,255,255,.08)" } }
+          }
+        }
+      });
+
+      const top = (data?.analytics?.mostPurchasedProducts || []).slice(0, 6);
+      document.getElementById("topChartSkeleton").style.display = "none";
+      const topCanvas = document.getElementById("topChart");
+      topCanvas.style.display = "block";
+      if (topChart) topChart.destroy();
+      topChart = new Chart(topCanvas.getContext("2d"), {
+        type: "bar",
+        data: {
+          labels: top.map((p) => String(p.productId || "").slice(0, 10)),
+          datasets: [{ label: "Purchases", data: top.map((p) => Number(p.count || 0)), backgroundColor: "rgba(201,169,110,.55)" }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: "rgba(240,236,228,.65)" }, grid: { color: "rgba(255,255,255,.08)" } },
+            y: { ticks: { color: "rgba(240,236,228,.65)" }, grid: { color: "rgba(255,255,255,.08)" } }
+          }
+        }
+      });
     }
 
     async function init() {

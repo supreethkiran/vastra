@@ -317,6 +317,48 @@ async function getMyOrders() {
   return orders;
 }
 
+async function createProduct(productInput) {
+  if (!db) throw new Error("Firestore not initialized");
+  if (!authUser) throw new Error("Please sign in first.");
+  if (!isAdminUser(authUser)) throw new Error("Admin access required.");
+
+  const payload = productInput && typeof productInput === "object" ? productInput : {};
+  const name = String(payload.name || "").trim();
+  const image = String(payload.image || payload.imageUrl || "").trim();
+  const description = String(payload.description || "").trim();
+  const category = String(payload.category || "Essentials").trim() || "Essentials";
+  const price = Number(payload.price || 0);
+  const secondaryImage = String(payload.secondaryImage || payload.hoverImage || "").trim();
+  const thirdImage = String(payload.thirdImage || "").trim();
+  const badge = String(payload.badge || "").trim();
+  const badgeType = String(payload.badgeType || "").trim();
+  const stock = Number(payload.stock || 0);
+
+  if (!name) throw new Error("Product name is required.");
+  if (!Number.isFinite(price) || price <= 0) throw new Error("Valid price is required.");
+  if (!image) throw new Error("Image URL is required.");
+
+  const ref = doc(collection(db, "products"));
+  const data = {
+    id: ref.id,
+    name,
+    price,
+    image,
+    description,
+    category,
+    secondaryImage,
+    thirdImage,
+    badge,
+    badgeType,
+    stock,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp()
+  };
+
+  await setDoc(ref, data, { merge: true });
+  return { id: ref.id };
+}
+
 function getCurrentUser() {
   return authUser;
 }
@@ -446,6 +488,7 @@ window.firebaseApi = {
   finalizePaidOrder,
   getOrderById,
   getMyOrders,
+  createProduct,
   getCurrentUser,
   subscribeAuth,
   signUpWithEmail,

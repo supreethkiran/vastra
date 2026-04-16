@@ -16,6 +16,27 @@ import { legalPage } from "./pages/legalPage.js";
 
 const app = document.getElementById("app");
 
+function bindRipplesOnce() {
+  if (window.__vastraRipplesBound) return;
+  window.__vastraRipplesBound = true;
+
+  document.addEventListener("pointerdown", (event) => {
+    const btn = event.target?.closest?.("button.btn, a.btn, .nav button, .nav a");
+    if (!btn) return;
+    if (btn.disabled) return;
+    btn.classList.add("ripple-ready");
+    const rect = btn.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    const ripple = document.createElement("span");
+    ripple.className = "ripple";
+    ripple.style.left = `${x}px`;
+    ripple.style.top = `${y}px`;
+    btn.appendChild(ripple);
+    window.setTimeout(() => ripple.remove(), 650);
+  });
+}
+
 function requireAuth() {
   if (!getCurrentUser()) {
     location.hash = "#/login";
@@ -26,6 +47,7 @@ function requireAuth() {
 
 async function router() {
   mountMiniCart();
+  bindRipplesOnce();
   renderNavbar((target) => {
     location.hash = target;
   });

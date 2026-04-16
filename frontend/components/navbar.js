@@ -9,11 +9,14 @@ export function renderNavbar(onNavigate) {
   el.innerHTML = `
     <nav class="nav">
       <a class="brand" href="#/">VASTRA</a>
+      <button id="navHamburger" class="nav-hamburger" type="button" aria-label="Open menu">
+        <span class="nav-hamburger-lines" aria-hidden="true"><span></span><span></span><span></span></span>
+      </button>
       <div class="nav-search-wrap">
         <input id="navSearchInput" type="search" placeholder="Search products...">
         <div id="navSearchSuggest" class="search-suggest" style="display:none;"></div>
       </div>
-      <div class="nav-links">
+      <div class="nav-links primary-links">
         <a href="#/">Shop</a>
         <button id="navCartBtn" class="nav-pill" type="button" aria-label="Open cart">
           Cart
@@ -33,6 +36,29 @@ export function renderNavbar(onNavigate) {
         }
       </div>
     </nav>
+    <div id="mobileNavBackdrop" class="mobile-nav-backdrop"></div>
+    <aside id="mobileNavDrawer" class="mobile-nav-drawer" aria-label="Menu">
+      <div class="row" style="justify-content:space-between;">
+        <strong style="letter-spacing:.18em;">MENU</strong>
+        <button id="mobileNavClose" class="btn ghost" type="button">Close</button>
+      </div>
+      <div class="mobile-nav-links">
+        <a class="btn ghost" href="#/">Shop</a>
+        <button id="mobileCartBtn" class="btn ghost" type="button">Cart</button>
+        <a class="btn ghost" href="#/wishlist">Wishlist</a>
+        <a class="btn ghost" href="#/orders">My Orders</a>
+        <a class="btn ghost" href="#/track">Track Order</a>
+        <a class="btn ghost" href="#/legal/privacy">Legal</a>
+        ${user?.role === "admin" ? '<a class="btn ghost" href="#/admin">Admin</a>' : ""}
+      </div>
+      <div class="stack" style="gap:8px;">
+        ${
+          user
+            ? `<div class="row"><span class="muted">Signed in</span><span class="pill">${user.name}</span></div><button id="mobileLogoutBtn" class="btn primary" type="button">Logout</button>`
+            : '<a class="btn primary" href="#/login">Login</a><a class="btn ghost" href="#/signup">Create account</a>'
+        }
+      </div>
+    </aside>
   `;
 
   const btn = document.getElementById("logoutBtn");
@@ -49,6 +75,37 @@ export function renderNavbar(onNavigate) {
       return;
     }
     onNavigate("#/cart");
+  });
+
+  const backdrop = document.getElementById("mobileNavBackdrop");
+  const drawer = document.getElementById("mobileNavDrawer");
+  const openMobile = () => {
+    drawer.classList.add("open");
+    backdrop.classList.add("open");
+    document.documentElement.style.overflow = "hidden";
+  };
+  const closeMobile = () => {
+    drawer.classList.remove("open");
+    backdrop.classList.remove("open");
+    document.documentElement.style.overflow = "";
+  };
+  document.getElementById("navHamburger")?.addEventListener("click", openMobile);
+  document.getElementById("mobileNavClose")?.addEventListener("click", closeMobile);
+  backdrop?.addEventListener("click", closeMobile);
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeMobile();
+  });
+  drawer?.querySelectorAll('a[href^="#/"]').forEach((a) => {
+    a.addEventListener("click", closeMobile);
+  });
+  document.getElementById("mobileCartBtn")?.addEventListener("click", () => {
+    closeMobile();
+    document.getElementById("navCartBtn")?.click();
+  });
+  document.getElementById("mobileLogoutBtn")?.addEventListener("click", () => {
+    closeMobile();
+    logout();
+    onNavigate("#/login");
   });
 
   const searchInput = document.getElementById("navSearchInput");

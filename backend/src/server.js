@@ -48,6 +48,24 @@ app.use(["/api/auth", "/api/cart", "/api/orders", "/api/payments"], (req, res) =
 app.get("/admin.html", (req, res) => {
   return res.sendFile(path.join(__dirname, "../../admin.html"));
 });
+app.get("/admin-upload.html", (req, res) => {
+  return res.sendFile(path.join(__dirname, "../../admin-upload.html"));
+});
+app.get("/1.html", (req, res) => {
+  return res.sendFile(path.join(__dirname, "../../1.html"));
+});
+app.get("/2.html", (req, res) => {
+  return res.sendFile(path.join(__dirname, "../../2.html"));
+});
+app.get("/cart.html", (req, res) => {
+  return res.sendFile(path.join(__dirname, "../../cart.html"));
+});
+app.get("/checkout.html", (req, res) => {
+  return res.sendFile(path.join(__dirname, "../../checkout.html"));
+});
+app.get("/success.html", (req, res) => {
+  return res.sendFile(path.join(__dirname, "../../success.html"));
+});
 app.get("/firebase-config.js", (req, res) => {
   // Single source of truth: serve the committed firebase-config.js file.
   res.set("Cache-Control", "no-store, max-age=0");
