@@ -2,6 +2,7 @@ import { renderNavbar } from "./components/navbar.js";
 import { showToast } from "./components/toast.js";
 import { getCurrentUser } from "./services/authService.js";
 import { fetchBackendCart, syncCartToBackend } from "./services/cartService.js";
+import { mountMiniCart } from "./components/miniCart.js";
 import { shopPage } from "./pages/shopPage.js";
 import { productPage } from "./pages/productPage.js";
 import { loginPage, signupPage } from "./pages/authPages.js";
@@ -25,6 +26,7 @@ function requireAuth() {
 }
 
 async function router() {
+  mountMiniCart();
   renderNavbar((target) => {
     location.hash = target;
   });

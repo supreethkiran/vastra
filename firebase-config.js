@@ -1,9 +1,8 @@
-/* Paste your Firebase web config once here. */
 window.VASTRA_FIREBASE_CONFIG = {
-  apiKey: "YOUR_FIREBASE_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyBTsjYZ4zD5pG0yt8Cjt6mUTUuusJHB8b4",
+  authDomain: "vastra-94b01.firebaseapp.com",
+  projectId: "vastra-94b01",
+  storageBucket: "vastra-94b01.firebasestorage.app",
+  messagingSenderId: "822065045989",
+  appId: "1:822065045989:web:66088cc0078132ddb64f0c"
 };

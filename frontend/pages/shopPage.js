@@ -7,7 +7,20 @@ import { getRecentlyViewed } from "../services/recentService.js";
 
 export async function shopPage(app) {
   app.innerHTML = `
-    <h1 class="section-title fade-in">Drop Collection</h1>
+    <section class="hero">
+      <div class="hero-inner hero-animate">
+        <span class="hero-eyebrow">Premium drops • Limited stock</span>
+        <h1 class="hero-title">Wear the statement. Own the room.</h1>
+        <p class="hero-subtitle">Vastra blends modern silhouettes with premium fabrics—built for daily flex, night plans, and everything in-between.</p>
+        <div class="hero-cta-row">
+          <button id="heroShopNowBtn" class="btn primary" type="button">Shop Now</button>
+          <a class="btn ghost" href="#/wishlist">Explore Wishlist</a>
+        </div>
+      </div>
+      <div class="scroll-indicator" aria-hidden="true"></div>
+    </section>
+
+    <h2 class="section-title fade-in" style="margin-top:6px;">Drop Collection</h2>
     <div class="toolbar">
       <input id="searchInput" placeholder="Search products...">
       <select id="categoryInput">
@@ -18,7 +31,7 @@ export async function shopPage(app) {
       </select>
       <button id="filterBtn" class="btn">Apply</button>
     </div>
-    <div id="products" class="grid fade-in"></div>
+    <div id="products" class="grid fade-in" aria-live="polite"></div>
     <section id="recommendedWrap" class="stack" style="margin-top:18px;"></section>
     <section id="recentWrap" class="stack" style="margin-top:18px;"></section>
   `;
@@ -29,6 +42,13 @@ export async function shopPage(app) {
   const categoryInput = document.getElementById("categoryInput");
   const recentWrap = document.getElementById("recentWrap");
   const recommendedWrap = document.getElementById("recommendedWrap");
+  const heroShopNowBtn = document.getElementById("heroShopNowBtn");
+
+  heroShopNowBtn?.addEventListener("click", () => {
+    const toolbar = document.querySelector(".toolbar");
+    toolbar?.scrollIntoView({ behavior: "smooth", block: "start" });
+    searchInput?.focus?.();
+  });
 
   function animateAddToCart(button) {
     const cartLink = document.querySelector('a[href="#/cart"]');

@@ -1,9 +1,11 @@
 import { getCurrentUser, logout } from "../services/authService.js";
 import { fetchProducts } from "../services/productService.js";
+import { getLocalCart } from "../services/cartService.js";
 
 export function renderNavbar(onNavigate) {
   const user = getCurrentUser();
   const el = document.getElementById("appHeader");
+  const cartCount = getLocalCart().reduce((sum, item) => sum + Number(item.qty || 0), 0);
   el.innerHTML = `
     <nav class="nav">
       <a class="brand" href="#/">VASTRA</a>
@@ -13,7 +15,10 @@ export function renderNavbar(onNavigate) {
       </div>
       <div class="nav-links">
         <a href="#/">Shop</a>
-        <a href="#/cart">Cart</a>
+        <button id="navCartBtn" class="nav-pill" type="button" aria-label="Open cart">
+          Cart
+          <span id="navCartCount" class="nav-cart-count" style="${cartCount > 0 ? "" : "display:none;"}">${cartCount}</span>
+        </button>
         <a href="#/wishlist">Wishlist</a>
         <a href="#/orders">My Orders</a>
         <a href="#/track">Track Order</a>
@@ -37,6 +42,14 @@ export function renderNavbar(onNavigate) {
       onNavigate("#/login");
     });
   }
+
+  document.getElementById("navCartBtn")?.addEventListener("click", () => {
+    if (window.__vastraMiniCart?.open) {
+      window.__vastraMiniCart.open();
+      return;
+    }
+    onNavigate("#/cart");
+  });
 
   const searchInput = document.getElementById("navSearchInput");
   const suggestEl = document.getElementById("navSearchSuggest");

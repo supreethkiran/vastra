@@ -131,7 +131,17 @@ export function checkoutPage(app) {
 
     const payBtn = document.getElementById("payBtn");
     payBtn.disabled = true;
-    payBtn.textContent = "Processing...";
+    payBtn.innerHTML = '<span class="spinner"></span> Processing';
+    const overlay = document.createElement("div");
+    overlay.className = "processing-overlay";
+    overlay.innerHTML = `
+      <div class="processing-card">
+        <div style="display:flex;justify-content:center;"><span class="spinner" style="width:22px;height:22px;"></span></div>
+        <strong>Processing payment</strong>
+        <p class="muted" style="margin-top:2px;">Please don’t close this tab while we confirm your order.</p>
+      </div>
+    `;
+    document.body.appendChild(overlay);
     try {
       const paymentOrder = await api("/payments/create-order", {
         method: "POST",
@@ -170,6 +180,7 @@ export function checkoutPage(app) {
     } finally {
       payBtn.disabled = false;
       payBtn.textContent = "Pay Now";
+      overlay.remove();
     }
   });
 }

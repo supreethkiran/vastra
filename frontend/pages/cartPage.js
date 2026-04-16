@@ -1,6 +1,8 @@
 import { getLocalCart, setLocalCart, syncCartToBackend } from "../services/cartService.js";
 import { showToast } from "../components/toast.js";
 
+const FREE_SHIPPING_THRESHOLD = 999;
+
 function total(cart) {
   return cart.reduce((sum, item) => sum + Number(item.price) * Number(item.qty), 0);
 }
@@ -18,25 +20,43 @@ export async function cartPage(app) {
     return;
   }
 
+  const cartTotal = total(cart);
+  const remaining = Math.max(0, FREE_SHIPPING_THRESHOLD - cartTotal);
+
   app.innerHTML = `
     <h1 class="section-title">Cart</h1>
     <div class="stack fade-in">
+      <div class="card" style="padding:12px;">
+        <div class="row">
+          <span class="muted">${remaining > 0 ? `You're ₹${remaining.toLocaleString("en-IN")} away from free shipping` : "You unlocked free shipping"}</span>
+          <span class="pill">Free shipping at ₹${FREE_SHIPPING_THRESHOLD.toLocaleString("en-IN")}</span>
+        </div>
+        <div class="progress" aria-hidden="true" style="margin-top:10px;">
+          <span style="width:${Math.min(100, Math.round((cartTotal / FREE_SHIPPING_THRESHOLD) * 100))}%;"></span>
+        </div>
+      </div>
       ${cart
         .map(
           (item) => `
-          <article class="card row" style="padding:12px;">
-            <div class="row">
-              <img src="${item.image}" alt="${item.name}" style="width:60px;height:60px;border-radius:8px;object-fit:cover;">
-              <div>
-                <p>${item.name}</p>
-                <p class="price">₹${Number(item.price).toLocaleString("en-IN")}</p>
+          <article class="card row" data-row="${item.id}" style="padding:12px;align-items:flex-start;">
+            <div class="row" style="justify-content:flex-start;gap:12px;">
+              <img src="${item.image}" alt="${item.name}" loading="lazy" decoding="async" style="width:74px;height:74px;border-radius:12px;object-fit:cover;border:1px solid rgba(255,255,255,.08);">
+              <div class="stack" style="gap:6px;">
+                <div style="font-weight:800;line-height:1.2;">${item.name}</div>
+                ${item.selectedSize ? `<div class="muted" style="font-size:12px;">Size: ${item.selectedSize}</div>` : ""}
+                <div class="row" style="justify-content:flex-start;gap:10px;">
+                  <span class="price">₹${Number(item.price).toLocaleString("en-IN")}</span>
+                  <span class="pill">x ${item.qty}</span>
+                </div>
               </div>
             </div>
-            <div class="row">
-              <button class="btn" data-dec="${item.id}">-</button>
-              <span>${item.qty}</span>
-              <button class="btn" data-inc="${item.id}">+</button>
-              <button class="btn" data-remove="${item.id}">Remove</button>
+            <div class="stack" style="justify-items:end;gap:10px;">
+              <span class="qty">
+                <button class="btn ghost" data-dec="${item.id}" type="button" aria-label="Decrease quantity">-</button>
+                <strong>${item.qty}</strong>
+                <button class="btn ghost" data-inc="${item.id}" type="button" aria-label="Increase quantity">+</button>
+              </span>
+              <button class="btn ghost" data-remove="${item.id}" type="button">Remove</button>
             </div>
           </article>
         `
@@ -67,7 +87,11 @@ export async function cartPage(app) {
       updateCart(next);
     });
     app.querySelector(`[data-remove="${item.id}"]`)?.addEventListener("click", () => {
-      updateCart(getLocalCart().filter((c) => c.id !== item.id));
+      const row = app.querySelector(`[data-row="${CSS.escape(String(item.id))}"]`);
+      row?.classList.add("removing");
+      setTimeout(() => {
+        updateCart(getLocalCart().filter((c) => c.id !== item.id));
+      }, 160);
     });
   });
 

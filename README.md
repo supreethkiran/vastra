@@ -61,13 +61,16 @@ This project extends the existing static VASTRA storefront into a full-stack e-c
    - `npm install`
 2. Configure env:
    - copy `.env.example` to `.env`
+   - set Firebase Web config via either:
+     - `FIREBASE_WEB_CONFIG_JSON` (recommended), or
+     - individual `FIREBASE_WEB_*` fields
    - set `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` for payment verification
    - set `FIREBASE_PROJECT_ID`
    - set `FIREBASE_SERVICE_ACCOUNT_JSON` (single-line JSON with escaped newlines in private key)
    - set `CORS_ORIGIN` including deployed frontend domain(s) and local development origins
 3. Firebase Auth production setup:
    - add your deployed Vercel domain in Firebase Console -> Authentication -> Settings -> Authorized domains
-   - ensure `window.VASTRA_FIREBASE_CONFIG` in `firebase-config.js` uses matching `authDomain`
+   - ensure Firebase Web config `authDomain` matches your Firebase project and authorized domain list
 4. Start app:
    - `npm run dev`
 5. Open:

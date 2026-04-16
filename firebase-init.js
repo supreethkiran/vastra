@@ -42,21 +42,29 @@ window.firebaseReady = new Promise((resolve) => {
 let globalErrorLoggingBound = false;
 
 function getRuntimeFirebaseConfig() {
-  const runtimeConfig = window.VASTRA_FIREBASE_CONFIG || {};
+  const runtimeConfig = window.VASTRA_FIREBASE_CONFIG;
+  console.log("[VASTRA] Raw Firebase config:", runtimeConfig);
+  if (!runtimeConfig || typeof runtimeConfig !== "object") {
+    throw new Error(
+      "Firebase config not found. Ensure window.VASTRA_FIREBASE_CONFIG is loaded before firebase-init.js"
+    );
+  }
   const firebaseConfig = { ...DEFAULT_CONFIG, ...runtimeConfig };
   console.log("[VASTRA] Config received:", firebaseConfig);
   return firebaseConfig;
 }
 
-function isConfigValid(firebaseConfig) {
-  return (
-    firebaseConfig.apiKey &&
-    firebaseConfig.authDomain &&
-    firebaseConfig.projectId &&
-    firebaseConfig.apiKey !== DEFAULT_CONFIG.apiKey &&
-    firebaseConfig.authDomain !== DEFAULT_CONFIG.authDomain &&
-    firebaseConfig.projectId !== DEFAULT_CONFIG.projectId
-  );
+function getMissingConfigFields(firebaseConfig) {
+  const missing = [];
+  const required = ["apiKey", "authDomain", "projectId", "appId"];
+  required.forEach((field) => {
+    const value = String(firebaseConfig?.[field] || "").trim();
+    const defaultValue = String(DEFAULT_CONFIG[field] || "").trim();
+    if (!value || value === defaultValue) {
+      missing.push(field);
+    }
+  });
+  return missing;
 }
 
 function bindAuthObserverOnce() {
@@ -84,20 +92,14 @@ function initializeFirebaseRuntime(options = {}) {
     resolveFirebaseReady(true);
     return true;
   }
-  const { attempt = 0, maxAttempts = 20 } = options;
-  const firebaseConfig = getRuntimeFirebaseConfig();
-  if (!isConfigValid(firebaseConfig)) {
-    console.warn("[VASTRA] Firebase config not injected. Check window.VASTRA_FIREBASE_CONFIG placement in HTML.");
-    if (attempt < maxAttempts) {
-      window.setTimeout(() => initializeFirebaseRuntime({ attempt: attempt + 1, maxAttempts }), 150);
-    } else {
-      console.error("[VASTRA] Firebase initialization timed out due to missing/invalid config.");
-      resolveFirebaseReady(false);
-    }
-    return false;
-  }
-
   try {
+    const firebaseConfig = getRuntimeFirebaseConfig();
+    const missingFields = getMissingConfigFields(firebaseConfig);
+    if (missingFields.length) {
+      throw new Error(`Firebase config invalid. Missing/placeholder fields: ${missingFields.join(", ")}`);
+    }
+
+    console.log("CONFIG CHECK:", window.VASTRA_FIREBASE_CONFIG);
     const app = initializeApp(firebaseConfig);
     db = getFirestore(app);
     auth = getAuth(app);
@@ -110,7 +112,7 @@ function initializeFirebaseRuntime(options = {}) {
     resolveFirebaseReady(true);
     return true;
   } catch (error) {
-    console.error("[VASTRA] Firebase initialization failed:", error.message);
+    console.error("[VASTRA] Firebase init failed:", error);
     resolveFirebaseReady(false);
     return false;
   }

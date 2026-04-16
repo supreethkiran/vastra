@@ -48,6 +48,14 @@ app.use(["/api/auth", "/api/cart", "/api/orders", "/api/payments"], (req, res) =
 app.get("/admin.html", (req, res) => {
   return res.sendFile(path.join(__dirname, "../../admin.html"));
 });
+app.get("/firebase-config.js", (req, res) => {
+  // Single source of truth: serve the committed firebase-config.js file.
+  res.type("application/javascript");
+  return res.sendFile(path.join(__dirname, "../../firebase-config.js"));
+});
+app.get("/firebase-init.js", (req, res) => {
+  return res.sendFile(path.join(__dirname, "../../firebase-init.js"));
+});
 app.use("/", express.static(path.join(__dirname, "../../frontend")));
 
 app.use("/api/*", (req, res) => {

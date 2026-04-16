@@ -26,12 +26,14 @@ export async function productPage(app, id) {
     addRecentlyViewed(product);
     const stock = Number(product.stock || 12);
     const rating = Number(product.rating || 4.6).toFixed(1);
+    const sizes = Array.isArray(product.sizes) && product.sizes.length ? product.sizes : ["S", "M", "L", "XL"];
+    const defaultSize = sizes.includes("M") ? "M" : sizes[0];
     app.innerHTML = `
       <section class="card fade-in" style="padding:16px;">
         <div class="gallery-grid">
           <div class="stack">
             <div class="gallery-main zoomable">
-              <img id="mainGalleryImage" src="${fallbackGallery[0]}" alt="${product.name}">
+              <img id="mainGalleryImage" src="${fallbackGallery[0]}" alt="${product.name}" loading="eager" decoding="async">
             </div>
             <div class="thumb-row">
               ${fallbackGallery
@@ -49,13 +51,26 @@ export async function productPage(app, id) {
             </div>
             <p class="muted">${product.category}</p>
             <p class="muted">⭐ ${rating} · ${stock < 8 ? `${stock} in stock` : "In stock"}</p>
-            <p>${product.description}</p>
             <p class="price">₹${Number(product.price).toLocaleString("en-IN")}</p>
+            <div class="card stack" style="padding:12px;">
+              <div class="row">
+                <strong>Choose size</strong>
+                <span class="pill">Recommended: ${defaultSize}</span>
+              </div>
+              <div id="sizeRow" class="size-row" role="listbox" aria-label="Select size">
+                ${sizes.map((s) => `<button type="button" class="size-pill ${s === defaultSize ? "active" : ""}" data-size="${s}">${s}</button>`).join("")}
+              </div>
+              <p id="sizeHint" class="muted" style="font-size:12px;">Tip: sizes sell out fast—lock it in before checkout.</p>
+            </div>
             <button id="addOneBtn" class="btn primary">Add to Cart</button>
             <div class="trust-grid">
               <div class="trust-chip">100% Original</div>
               <div class="trust-chip">Secure Payment</div>
               <div class="trust-chip">Easy Returns</div>
+            </div>
+            <div class="card stack" style="padding:12px;">
+              <h3>Description</h3>
+              <p class="muted">${product.description || "Premium fabric, tailored fit, and made for daily wear."}</p>
             </div>
             <div class="card stack" style="padding:12px;">
               <h3>Size Recommendation</h3>
@@ -109,11 +124,21 @@ export async function productPage(app, id) {
       });
     });
 
+    let selectedSize = defaultSize;
+    const sizeRow = document.getElementById("sizeRow");
+    sizeRow?.querySelectorAll("[data-size]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        selectedSize = btn.dataset.size;
+        sizeRow.querySelectorAll("[data-size]").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+      });
+    });
+
     document.getElementById("addOneBtn").addEventListener("click", (event) => {
       const btn = event.currentTarget;
       btn.disabled = true;
       btn.textContent = "Adding...";
-      addToCart(product);
+      addToCart({ ...product, selectedSize });
       showToast("Added to Cart");
       setTimeout(() => {
         btn.disabled = false;
