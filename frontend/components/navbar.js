@@ -93,6 +93,25 @@ export function renderNavbar(onNavigate) {
     });
   }
 
+  // Force-intercept profile clicks globally to prevent refresh/navigation glitches
+  if (!window.__vastraGlobalProfileClickIntercept) {
+    window.__vastraGlobalProfileClickIntercept = true;
+    document.addEventListener(
+      "click",
+      (e) => {
+        const target = e.target?.closest?.("#profile-icon, [data-profile], .profile-icon, [data-profile-icon]");
+        if (!target) return;
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof e.stopImmediatePropagation === "function") e.stopImmediatePropagation();
+        console.log("Profile click intercepted");
+        const user = window.firebaseApi?.getCurrentUser?.() || getCurrentUser() || null;
+        window.location.href = user ? "/profile.html" : "/#/login";
+      },
+      true
+    );
+  }
+
   document.getElementById("navCartBtn")?.addEventListener("click", () => {
     if (window.__vastraMiniCart?.open) {
       window.__vastraMiniCart.open();

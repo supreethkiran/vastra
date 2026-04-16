@@ -56,6 +56,14 @@ function requireAuth() {
 }
 
 async function router() {
+  console.log("Current route:", location.hash || "#/");
+
+  if (!app) {
+    // Hard failsafe: never allow a silent blank screen if #app is missing.
+    console.error("[VASTRA][router] #app container missing");
+    return;
+  }
+
   // Safety: avoid "scroll freeze" if a drawer left overflow locked.
   document.documentElement.style.overflow = "";
   document.body.style.overflow = "";
@@ -139,8 +147,20 @@ async function router() {
   }
 }
 
-window.addEventListener("hashchange", router);
-window.addEventListener("load", router);
+window.addEventListener("hashchange", () => {
+  try {
+    router().catch((err) => console.error("[VASTRA][router] hashchange failed", err));
+  } catch (err) {
+    console.error("[VASTRA][router] hashchange threw", err);
+  }
+});
+window.addEventListener("load", () => {
+  try {
+    router().catch((err) => console.error("[VASTRA][router] load failed", err));
+  } catch (err) {
+    console.error("[VASTRA][router] load threw", err);
+  }
+});
 window.addEventListener("offline", () => showToast("You are offline. Some actions may fail."));
 window.addEventListener("online", () => showToast("Back online."));
 

@@ -4,7 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>VASTRA</title>
-  <meta http-equiv="refresh" content="0; url=./1.html">
+  <!-- Redirect into the SPA while preserving hash routes like #/login -->
+  <script>
+    (function redirectToSpa() {
+      try {
+        const target = "./frontend/index.html" + (window.location.hash || "");
+        // Replace avoids polluting history and prevents a visible "homepage flash".
+        window.location.replace(target);
+      } catch {
+        // Fallback for very old browsers
+        window.location.href = "./frontend/index.html";
+      }
+    })();
+  </script>
   <style>
     :root {
       --bg: #07080c;
@@ -87,8 +99,8 @@
 </head>
 <body>
   <main class="wrap">
-    <h1>Redirecting to VASTRA home...</h1>
-    <p>If redirection does not happen, open <a class="primary" href="./1.html">1.html</a>.</p>
+    <h1>Redirecting to VASTRA...</h1>
+    <p>If redirection does not happen, open <a class="primary" href="./frontend/index.html">the app</a>.</p>
   </main>
 </body>
 </html>
