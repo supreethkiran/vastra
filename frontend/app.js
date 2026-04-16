@@ -119,6 +119,24 @@ async function router() {
   } finally {
     setTimeout(() => app.classList.remove("route-enter"), 280);
   }
+
+  // Safety: warn about obviously-unwired buttons (heuristic, avoids spam).
+  try {
+    app.querySelectorAll("button").forEach((btn) => {
+      if (btn.dataset.wireWarned) return;
+      const id = btn.getAttribute("id") || "";
+      const hasData = Array.from(btn.attributes).some((a) => a.name.startsWith("data-"));
+      const type = btn.getAttribute("type") || "";
+      if (id || hasData || type === "submit") return;
+      btn.dataset.wireWarned = "1";
+      btn.addEventListener("click", () => {
+        // eslint-disable-next-line no-console
+        console.warn("Unwired button clicked:", (btn.innerText || btn.textContent || "").trim());
+      });
+    });
+  } catch {
+    // ignore
+  }
 }
 
 window.addEventListener("hashchange", router);

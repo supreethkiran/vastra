@@ -262,6 +262,7 @@ function subscribeCart(callback) {
 async function upsertCartItem(product, qtyDelta = 1) {
   if (!db) throw new Error("Firestore not initialized");
   if (!authUser) throw new Error("Please sign in to add items to cart.");
+  console.log("Writing to Firestore:", product);
   const itemRef = cartItemDoc(product.id);
   const current = await getDoc(itemRef);
   const existingQty = current.exists() ? Number((current.data() || {}).qty || 0) : 0;

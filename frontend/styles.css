@@ -186,6 +186,25 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--g
 .search-item:hover { background: rgba(255,255,255,.04); }
 .search-item img { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; }
 .nav-search-wrap { position: relative; min-width: 220px; }
+.nav-search-wrap { display: flex; align-items: center; gap: 8px; }
+.nav-search-wrap input { flex: 1; }
+.nav-icon{
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,.03);
+  color: rgba(245,245,245,.85);
+  cursor: pointer;
+}
+.nav-icon:hover{ border-color: rgba(201,169,110,.55); color: var(--gold); }
+
+/* Ensure profile icon is clickable */
+#profile-icon{
+  cursor: pointer;
+  pointer-events: auto;
+  z-index: 10;
+}
 .trust-grid { display: grid; gap: 8px; grid-template-columns: repeat(3, minmax(0,1fr)); }
 .trust-chip {
   border: 1px solid var(--border);

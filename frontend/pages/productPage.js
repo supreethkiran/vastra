@@ -133,12 +133,28 @@ export async function productPage(app, id) {
       });
     });
 
-    document.getElementById("addOneBtn").addEventListener("click", (event) => {
+    document.getElementById("addOneBtn").addEventListener("click", async (event) => {
       const btn = event.currentTarget;
       btn.disabled = true;
       btn.textContent = "Adding...";
       try {
-        addToCart({ ...product, selectedSize });
+        const user = window.firebaseApi?.getCurrentUser?.() || null;
+        if (!user) {
+          alert("Please login first");
+          window.location.href = "/#/login";
+          return;
+        }
+        const clean = {
+          id: String(product.id),
+          productId: String(product.productId || product.id),
+          name: String(product.name || "Product"),
+          price: Number(product.price || 0),
+          image: String(product.image || ""),
+          selectedSize,
+          stock: product.stock
+        };
+        console.log("Adding product:", clean);
+        await window.firebaseApi.upsertCartItem(clean, 1);
         btn.classList.remove("pulse");
         void btn.offsetWidth;
         btn.classList.add("pulse");

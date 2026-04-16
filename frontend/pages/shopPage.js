@@ -421,12 +421,27 @@ export async function shopPage(app) {
       app.querySelectorAll("[data-add]").forEach((btn) => {
         const product = productsById[btn.dataset.add];
         if (!product) return;
-        btn.addEventListener("click", () => {
+        btn.addEventListener("click", async () => {
           btn.disabled = true;
           const oldLabel = btn.textContent;
           btn.textContent = "Adding...";
           try {
-            addToCart(product);
+            const user = window.firebaseApi?.getCurrentUser?.() || null;
+            if (!user) {
+              alert("Please login first");
+              window.location.href = "/#/login";
+              return;
+            }
+            const clean = {
+              id: String(product.id),
+              productId: String(product.productId || product.id),
+              name: String(product.name || "Product"),
+              price: Number(product.price || 0),
+              image: String(product.image || ""),
+              stock: product.stock
+            };
+            console.log("Adding product:", clean);
+            await window.firebaseApi.upsertCartItem(clean, 1);
             animateAddToCart(btn);
             btn.classList.remove("pulse");
             void btn.offsetWidth;
@@ -459,6 +474,14 @@ export async function shopPage(app) {
   }
 
   filterBtn.addEventListener("click", loadProducts);
+  // Real search: filter as user types (debounced)
+  let searchTimer = 0;
+  searchInput.addEventListener("input", (event) => {
+    clearTimeout(searchTimer);
+    const query = String(event.target.value || "").trim().toLowerCase();
+    console.log("Search query:", query);
+    searchTimer = window.setTimeout(() => loadProducts(), 160);
+  });
   searchInput.addEventListener("keydown", (event) => {
     if (event.key === "Enter") loadProducts();
   });

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>VASTRA — Profile</title>
+  <title>VASTRA — Dashboard</title>
   <style>
     :root{
       --bg:#060608;--surface:#101118;--surface2:#171925;--text:#f0ece4;--muted:rgba(240,236,228,.65);
@@ -26,8 +26,7 @@
     }
     .brand{letter-spacing:.22em;font-weight:900}
     .nav-actions{display:flex;gap:10px;flex-wrap:wrap}
-    .wrap{max-width:1100px;margin:0 auto;padding:22px 16px 90px}
-    .grid{display:grid;grid-template-columns: 1fr 1.2fr;gap:14px;align-items:start}
+    .wrap{max-width:1220px;margin:0 auto;padding:22px 16px 90px}
     .card{
       background:linear-gradient(160deg, rgba(255,255,255,.025), rgba(255,255,255,.01));
       border:1px solid var(--border);
@@ -35,7 +34,7 @@
       padding:16px;
       box-shadow:var(--shadow);
     }
-    .title{font-size:26px;letter-spacing:.04em;margin-bottom:8px}
+    .title{font-size:28px;letter-spacing:.04em;margin-bottom:8px}
     .muted{color:var(--muted)}
     .row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
     .pill{
@@ -63,14 +62,37 @@
     .btn:disabled{opacity:.65;cursor:not-allowed;transform:none}
     .spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.28);border-top-color:#fff;border-radius:50%;display:inline-block;animation:spin .7s linear infinite}
     @keyframes spin{to{transform:rotate(360deg)}}
-    .orders{display:grid;gap:10px}
-    .order{
-      padding:12px;
+    .layout{display:grid;grid-template-columns: 320px 1fr;gap:14px;align-items:start;margin-top:14px;}
+    .sidebar{position:sticky;top:86px;display:grid;gap:12px;}
+    .navlist{display:grid;gap:8px;margin-top:10px;}
+    .navitem{
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      width:100%;
       border:1px solid rgba(255,255,255,.10);
-      border-radius:14px;
       background:rgba(255,255,255,.02);
-      transition:transform .18s var(--ease), border-color .18s var(--ease);
+      color:var(--text);
+      border-radius:14px;
+      padding:12px 12px;
+      cursor:pointer;
+      transition: transform .18s var(--ease), border-color .18s var(--ease), background .18s var(--ease);
+      text-align:left;
+      font-weight:800;
+      letter-spacing:.10em;
+      text-transform:uppercase;
+      font-size:10px;
+      min-height:48px;
     }
+    .navitem:hover{transform:translateY(-1px);border-color:rgba(201,169,110,.28)}
+    .navitem.active{border-color:rgba(201,169,110,.55);background:rgba(201,169,110,.10)}
+    .navhint{color:rgba(240,236,228,.60);font-weight:700;letter-spacing:0; text-transform:none; font-size:12px;}
+    .content{display:grid;gap:12px;}
+    .kpi-grid{display:grid;grid-template-columns: repeat(3, minmax(0,1fr));gap:10px;}
+    .kpi{padding:14px;border:1px solid rgba(255,255,255,.10);border-radius:16px;background:rgba(255,255,255,.02)}
+    .kpi .label{color:var(--muted);font-size:12px}
+    .kpi .value{margin-top:6px;font-size:22px;font-weight:900;letter-spacing:.02em;color:var(--gold)}
+    .section-head{display:flex;align-items:end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .orders{display:grid;gap:10px}
+    .order{padding:12px;border:1px solid rgba(255,255,255,.10);border-radius:14px;background:rgba(255,255,255,.02);transition:transform .18s var(--ease), border-color .18s var(--ease);}
     .order:hover{transform:translateY(-1px);border-color:rgba(201,169,110,.28)}
     .status{
       display:inline-flex;align-items:center;gap:8px;
@@ -84,7 +106,19 @@
     .status.bad{border-color:rgba(255,107,122,.35);background:rgba(255,107,122,.10)}
     .danger{color:var(--danger)}
     .empty{padding:14px;border:1px dashed rgba(255,255,255,.12);border-radius:14px;color:var(--muted);text-align:center}
-    @media (max-width: 900px){.grid{grid-template-columns:1fr}}
+    .tabs{display:none;gap:8px;flex-wrap:wrap}
+    .tab{flex:1;min-width:150px}
+    @media (max-width: 980px){
+      .layout{grid-template-columns:1fr;}
+      .sidebar{position:relative;top:auto}
+      .tabs{display:flex}
+      .navlist{display:none}
+      .kpi-grid{grid-template-columns:1fr}
+    }
+    @media (max-width: 520px){
+      .topbar-inner{gap:8px}
+      .btn{min-height:48px}
+    }
   </style>
 </head>
 <body>
@@ -95,35 +129,52 @@
       </a>
       <div class="nav-actions">
         <a class="btn" href="/#/">Shop</a>
-        <a class="btn" href="/#/orders">My Orders</a>
+        <a class="btn" href="/cart.html">Cart</a>
         <button id="logoutBtn" class="btn primary" type="button">Logout</button>
       </div>
     </div>
   </header>
 
   <main class="wrap">
-    <h1 class="title">Profile</h1>
-    <p class="muted" id="statusLine">Loading your account…</p>
+    <div class="row" style="align-items:flex-end;">
+      <div>
+        <h1 class="title">My Account</h1>
+        <p class="muted" id="statusLine">Loading your account…</p>
+      </div>
+      <span class="pill" id="loggedInPill">Checking…</span>
+    </div>
 
-    <div class="grid" style="margin-top:14px;">
-      <section class="card">
-        <div class="row" style="margin-bottom:10px;">
-          <strong>Profile Info</strong>
-          <span class="pill" id="loggedInPill">Checking…</span>
-        </div>
-        <div class="orders" style="gap:8px;">
-          <div class="row"><span class="muted">Email</span><strong id="userEmail">—</strong></div>
-          <div class="row"><span class="muted">UID</span><strong id="userUid">—</strong></div>
-          <div class="row"><span class="muted">Status</span><strong id="userStatus">—</strong></div>
-        </div>
-      </section>
+    <div class="layout">
+      <aside class="sidebar">
+        <section class="card">
+          <div class="row">
+            <div>
+              <div class="muted" style="font-size:12px;">Signed in as</div>
+              <strong id="userEmail" style="display:block;margin-top:4px;">—</strong>
+              <div class="muted" style="font-size:12px;margin-top:4px;">UID: <span id="userUid">—</span></div>
+            </div>
+            <span class="pill" id="userStatus">—</span>
+          </div>
 
-      <section class="card">
-        <div class="row" style="margin-bottom:10px;">
-          <strong>Orders</strong>
-          <span class="pill" id="ordersCount">—</span>
-        </div>
-        <div id="ordersRoot" class="orders"></div>
+          <div class="tabs" style="margin-top:12px;">
+            <button class="navitem tab" id="nav-dashboard-tab" data-nav="dashboard" type="button">Dashboard <span class="navhint">Overview</span></button>
+            <button class="navitem tab" id="nav-orders-tab" data-nav="orders" type="button">My Orders <span class="navhint" id="ordersCount">—</span></button>
+            <button class="navitem tab" id="nav-account-tab" data-nav="account" type="button">Account <span class="navhint">Details</span></button>
+            <button class="navitem tab" id="nav-cart-tab" data-nav="cart" type="button">My Cart <span class="navhint">Open</span></button>
+          </div>
+
+          <div class="navlist">
+            <button class="navitem" id="nav-dashboard-side" data-nav="dashboard" type="button">Dashboard <span class="navhint">Overview</span></button>
+            <button class="navitem" id="nav-orders-side" data-nav="orders" type="button">My Orders <span class="navhint" id="ordersCountDesktop">—</span></button>
+            <button class="navitem" id="nav-cart-side" data-nav="cart" type="button">My Cart <span class="navhint">Open</span></button>
+            <button class="navitem" id="nav-account-side" data-nav="account" type="button">Account Details <span class="navhint">Security</span></button>
+            <button class="navitem" id="nav-logout-side" data-nav="logout" type="button">Logout <span class="navhint">Sign out</span></button>
+          </div>
+        </section>
+      </aside>
+
+      <section class="content">
+        <div id="profile-content"></div>
       </section>
     </div>
   </main>
@@ -132,9 +183,11 @@
   <script type="module" src="/firebase-init.js"></script>
   <script>
     const statusLine = document.getElementById("statusLine");
-    const ordersRoot = document.getElementById("ordersRoot");
     const loggedInPill = document.getElementById("loggedInPill");
     const ordersCount = document.getElementById("ordersCount");
+    const ordersCountDesktop = document.getElementById("ordersCountDesktop");
+    const contentRoot = document.getElementById("profile-content");
+    const navButtons = Array.from(document.querySelectorAll("[data-nav]"));
 
     function fmtINR(n){ return "₹" + Number(n || 0).toLocaleString("en-IN"); }
     function esc(v){ return String(v || "").replace(/[&<>"']/g, (ch) => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[ch])); }
@@ -150,19 +203,25 @@
       window.location.href = "/#/login";
     }
 
-    async function fetchUserOrders(){
-      if (!window.firebaseApi?.getMyOrders) return [];
-      return await window.firebaseApi.getMyOrders();
-    }
-
     function renderOrders(orders){
       const list = Array.isArray(orders) ? orders : [];
-      ordersCount.textContent = `${list.length} orders`;
+      const label = `${list.length} orders`;
+      if (ordersCount) ordersCount.textContent = label;
+      if (ordersCountDesktop) ordersCountDesktop.textContent = label;
       if (!list.length){
-        ordersRoot.innerHTML = '<div class="empty">No orders yet. Start shopping and your orders will appear here.</div>';
+        contentRoot.innerHTML = '<div class="card empty-state"><p class="muted">No orders yet.</p><a class="btn" href="/#/">Start shopping</a></div>';
         return;
       }
-      ordersRoot.innerHTML = list.map((o) => {
+      contentRoot.innerHTML = `
+        <div class="section-head">
+          <div>
+            <h2 class="section-title" style="margin:0;">My Orders</h2>
+            <p class="muted" style="margin-top:6px;">Track your recent purchases and status updates.</p>
+          </div>
+          <span class="pill">${esc(label)}</span>
+        </div>
+        <div class="orders" style="margin-top:12px;">
+          ${list.map((o) => {
         const total = o.totalAmount ?? o.total ?? 0;
         const status = o.status ?? (o.paymentStatus ? o.paymentStatus : "pending");
         const dateRaw = o.createdAt?.toDate ? o.createdAt.toDate() : (o.createdAt?.seconds ? new Date(o.createdAt.seconds * 1000) : new Date(o.createdAt || o.date || Date.now()));
@@ -179,17 +238,21 @@
             </div>
           </article>
         `;
-      }).join("");
+      }).join("")}
+        </div>
+      `;
     }
 
     async function loadOrders(){
-      ordersRoot.innerHTML = '<div class="empty"><span class="spinner" style="vertical-align:middle;"></span> Loading orders…</div>';
+      contentRoot.innerHTML = '<div class="card empty-state"><span class="spinner" style="vertical-align:middle;"></span> <span class="muted">Loading orders…</span></div>';
       try{
-        const orders = await fetchUserOrders();
+        const orders = await window.firebaseApi.getMyOrders();
         renderOrders(orders);
+        return orders;
       }catch(e){
         console.error("orders load failed", e);
-        ordersRoot.innerHTML = `<div class="empty danger">${esc(e?.message || "Unable to load orders")}</div>`;
+        contentRoot.innerHTML = `<div class="card empty-state"><p class="danger">${esc(e?.message || "Unable to load orders")}</p></div>`;
+        return [];
       }
     }
 
@@ -208,6 +271,67 @@
       statusLine.textContent = `Welcome, ${user.email || "user"}`;
     }
 
+    function setActive(key){
+      navButtons.forEach((b) => b.classList.toggle("active", b.dataset.nav === key));
+    }
+
+    function loadDashboard(user, orders = [], cartCount = 0){
+      setActive("dashboard");
+      const totalSpent = orders.reduce((sum, o) => sum + Number(o.total || o.totalAmount || 0), 0);
+      const recent = orders[0] || null;
+      contentRoot.innerHTML = `
+        <div class="section-head">
+          <div>
+            <h2 class="section-title" style="margin:0;">Welcome, ${esc(user.email || "user")}</h2>
+            <p class="muted" style="margin-top:6px;">Your account overview</p>
+          </div>
+          <a class="btn" href="/#/">Shop now</a>
+        </div>
+        <div class="kpi-grid" style="margin-top:12px;">
+          <div class="kpi">
+            <div class="label">Orders</div>
+            <div class="value">${orders.length}</div>
+          </div>
+          <div class="kpi">
+            <div class="label">Total spent</div>
+            <div class="value">${esc(fmtINR(totalSpent))}</div>
+          </div>
+          <div class="kpi">
+            <div class="label">Cart items</div>
+            <div class="value">${cartCount}</div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:12px;">
+          <div class="row">
+            <strong>Recent activity</strong>
+            <span class="pill">${recent ? esc(recent.status || "paid") : "—"}</span>
+          </div>
+          <p class="muted" style="margin-top:10px;">
+            ${recent ? `Last order <strong>${esc(recent.id)}</strong> for <strong>${esc(fmtINR(recent.total || recent.totalAmount || 0))}</strong>.` : "No recent orders yet."}
+          </p>
+        </div>
+      `;
+    }
+
+    function loadAccount(user){
+      setActive("account");
+      contentRoot.innerHTML = `
+        <div class="section-head">
+          <div>
+            <h2 class="section-title" style="margin:0;">Account Details</h2>
+            <p class="muted" style="margin-top:6px;">Your identity and sign-in information</p>
+          </div>
+        </div>
+        <div class="card" style="margin-top:12px;">
+          <div class="orders" style="gap:8px;">
+            <div class="row"><span class="muted">Email</span><strong>${esc(user.email || "—")}</strong></div>
+            <div class="row"><span class="muted">UID</span><strong>${esc(user.uid || "—")}</strong></div>
+            <div class="row"><span class="muted">Provider</span><strong>${esc((user.providerData && user.providerData[0] && user.providerData[0].providerId) || "firebase")}</strong></div>
+          </div>
+        </div>
+      `;
+    }
+
     document.getElementById("logoutBtn").addEventListener("click", async () => {
       const btn = document.getElementById("logoutBtn");
       btn.disabled = true;
@@ -215,6 +339,7 @@
       btn.innerHTML = '<span class="spinner"></span> Logging out';
       try{
         await window.firebaseApi.signOutUser();
+        alert("Logged out");
         window.location.href = "/";
       }catch(e){
         console.error("logout failed", e);
@@ -224,15 +349,51 @@
       }
     });
 
+    document.querySelectorAll('[data-nav="logout"]').forEach((el) =>
+      el.addEventListener("click", async () => {
+      try{
+        await window.firebaseApi.signOutUser();
+        alert("Logged out");
+        window.location.href = "/";
+      }catch(e){
+        alert(e?.message || "Logout failed");
+      }
+      })
+    );
+    document.querySelectorAll('[data-nav="cart"]').forEach((el) =>
+      el.addEventListener("click", () => {
+        window.location.href = "/cart.html";
+      })
+    );
+
     (async function init(){
       try{
         statusLine.textContent = "Loading your account…";
         await window.firebaseReady;
-        const user = await window.firebaseApi?.waitForAuth?.({ requireUser: false, timeoutMs: 12000 });
+        const user = await window.firebaseApi?.waitForAuth?.({ requireUser: true, timeoutMs: 12000 });
         console.log("User:", window.firebaseApi?.getCurrentUser?.() || null);
         if (!user) return redirectToLogin();
         renderUser(user);
-        await loadOrders();
+        let cartCount = 0;
+        if (window.firebaseApi?.subscribeCart) {
+          window.firebaseApi.subscribeCart((items) => {
+            cartCount = Array.isArray(items) ? items.reduce((sum, it) => sum + Number(it.qty || 0), 0) : 0;
+          });
+        }
+        const orders = await loadOrders();
+        loadDashboard(user, orders, cartCount);
+
+        // Sidebar navigation
+        document.querySelectorAll('[data-nav="dashboard"]').forEach((b) =>
+          b.addEventListener("click", () => loadDashboard(user, orders, cartCount))
+        );
+        document.querySelectorAll('[data-nav="orders"]').forEach((b) =>
+          b.addEventListener("click", async () => {
+            setActive("orders");
+            await loadOrders();
+          })
+        );
+        document.querySelectorAll('[data-nav="account"]').forEach((b) => b.addEventListener("click", () => loadAccount(user)));
       }catch(e){
         console.error("profile init failed", e);
         statusLine.textContent = e?.message || "Unable to load profile.";

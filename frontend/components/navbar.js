@@ -15,6 +15,7 @@ export function renderNavbar(onNavigate) {
       </button>
       <div class="nav-search-wrap">
         <input id="navSearchInput" type="search" placeholder="Search products...">
+        <button id="navSearchIcon" class="nav-icon" type="button" aria-label="Focus search">⌕</button>
         <div id="navSearchSuggest" class="search-suggest" style="display:none;"></div>
       </div>
       <div class="nav-links primary-links">
@@ -24,7 +25,7 @@ export function renderNavbar(onNavigate) {
           <span id="navCartCount" class="nav-cart-count" style="${cartCount > 0 ? "" : "display:none;"}">${cartCount}</span>
         </button>
         <a href="#/wishlist">Wishlist</a>
-        ${user ? '<a href="/profile.html">Profile</a>' : ""}
+        <button id="profile-icon" class="nav-pill" type="button" aria-label="Profile" data-profile-icon="1">👤</button>
         <a href="#/orders">My Orders</a>
         <a href="#/track">Track Order</a>
         <a href="#/legal/privacy">Legal</a>
@@ -48,7 +49,7 @@ export function renderNavbar(onNavigate) {
         <a class="btn ghost" href="#/">Shop</a>
         <button id="mobileCartBtn" class="btn ghost" type="button">Cart</button>
         <a class="btn ghost" href="#/wishlist">Wishlist</a>
-        ${user ? '<a class="btn ghost" href="/profile.html">Profile</a>' : ""}
+        <button id="mobileProfileBtn" class="btn ghost" type="button" data-profile-icon="1">Profile</button>
         <a class="btn ghost" href="#/orders">My Orders</a>
         <a class="btn ghost" href="#/track">Track Order</a>
         <a class="btn ghost" href="#/legal/privacy">Legal</a>
@@ -70,6 +71,25 @@ export function renderNavbar(onNavigate) {
       logout();
       showToast("Logged out successfully");
       onNavigate("#/login");
+    });
+  }
+
+  function goProfile() {
+    const u = getCurrentUser() || window.firebaseApi?.getCurrentUser?.() || null;
+    console.log("Profile clicked, user:", u);
+    if (!u) {
+      window.location.href = "/#/login";
+      return;
+    }
+    window.location.href = "/profile.html";
+  }
+  const profileIcon = document.getElementById("profile-icon");
+  if (!profileIcon) {
+    console.error("Profile icon not found");
+  } else {
+    profileIcon.addEventListener("click", () => {
+      console.log("Profile icon clicked");
+      goProfile();
     });
   }
 
@@ -106,6 +126,10 @@ export function renderNavbar(onNavigate) {
     closeMobile();
     document.getElementById("navCartBtn")?.click();
   });
+  document.getElementById("mobileProfileBtn")?.addEventListener("click", () => {
+    closeMobile();
+    goProfile();
+  });
   document.getElementById("mobileLogoutBtn")?.addEventListener("click", () => {
     closeMobile();
     logout();
@@ -115,6 +139,9 @@ export function renderNavbar(onNavigate) {
 
   const searchInput = document.getElementById("navSearchInput");
   const suggestEl = document.getElementById("navSearchSuggest");
+  document.getElementById("navSearchIcon")?.addEventListener("click", () => {
+    searchInput?.focus?.();
+  });
   let timer;
   searchInput?.addEventListener("input", () => {
     clearTimeout(timer);

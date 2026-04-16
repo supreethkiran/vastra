@@ -39,8 +39,22 @@ export function wishlistPage(app) {
   `;
 
   wishlist.forEach((item) => {
-    app.querySelector(`[data-add="${item.id}"]`)?.addEventListener("click", () => {
-      addToCart(item);
+    app.querySelector(`[data-add="${item.id}"]`)?.addEventListener("click", async () => {
+      const user = window.firebaseApi?.getCurrentUser?.() || null;
+      if (!user) {
+        alert("Please login first");
+        window.location.href = "/#/login";
+        return;
+      }
+      const clean = {
+        id: String(item.id),
+        productId: String(item.productId || item.id),
+        name: String(item.name || "Product"),
+        price: Number(item.price || 0),
+        image: String(item.image || "")
+      };
+      console.log("Adding product:", clean);
+      await window.firebaseApi.upsertCartItem(clean, 1);
       showToast("Added to Cart");
     });
     app.querySelector(`[data-remove="${item.id}"]`)?.addEventListener("click", () => {
