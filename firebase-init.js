@@ -1,3 +1,4 @@
+import "/firebase-config.mjs";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import {
   getFirestore,
@@ -40,6 +41,7 @@ window.firebaseReady = new Promise((resolve) => {
 });
 
 let globalErrorLoggingBound = false;
+window.__firebaseInitError = null;
 
 function getRuntimeFirebaseConfig() {
   const runtimeConfig = window.VASTRA_FIREBASE_CONFIG;
@@ -100,6 +102,7 @@ function initializeFirebaseRuntime(options = {}) {
     }
 
     console.log("CONFIG CHECK:", window.VASTRA_FIREBASE_CONFIG);
+    console.log("ACTIVE CONFIG:", firebaseConfig);
     const app = initializeApp(firebaseConfig);
     db = getFirestore(app);
     auth = getAuth(app);
@@ -113,6 +116,7 @@ function initializeFirebaseRuntime(options = {}) {
     return true;
   } catch (error) {
     console.error("[VASTRA] Firebase init failed:", error);
+    window.__firebaseInitError = error;
     resolveFirebaseReady(false);
     return false;
   }
@@ -389,7 +393,7 @@ async function signUpWithEmail(email, password) {
     console.log("[VASTRA AUTH] Signup success:", credential?.user?.uid || "");
     return credential.user;
   } catch (error) {
-    console.error("[VASTRA AUTH ERROR]", error);
+    console.error("AUTH ERROR:", error);
     throw new Error(`${error?.code || "auth/unknown"} | ${error?.message || "Unknown auth error"}`);
   }
 }
@@ -407,7 +411,7 @@ async function signInWithEmail(email, password) {
     console.log("[VASTRA AUTH] Signin success:", credential?.user?.uid || "");
     return credential.user;
   } catch (error) {
-    console.error("[VASTRA AUTH ERROR]", error);
+    console.error("AUTH ERROR:", error);
     throw new Error(`${error?.code || "auth/unknown"} | ${error?.message || "Unknown auth error"}`);
   }
 }

@@ -50,10 +50,17 @@ app.get("/admin.html", (req, res) => {
 });
 app.get("/firebase-config.js", (req, res) => {
   // Single source of truth: serve the committed firebase-config.js file.
+  res.set("Cache-Control", "no-store, max-age=0");
   res.type("application/javascript");
   return res.sendFile(path.join(__dirname, "../../firebase-config.js"));
 });
+app.get("/firebase-config.mjs", (req, res) => {
+  res.set("Cache-Control", "no-store, max-age=0");
+  res.type("application/javascript");
+  return res.sendFile(path.join(__dirname, "../../firebase-config.mjs"));
+});
 app.get("/firebase-init.js", (req, res) => {
+  res.set("Cache-Control", "no-store, max-age=0");
   return res.sendFile(path.join(__dirname, "../../firebase-init.js"));
 });
 app.use("/", express.static(path.join(__dirname, "../../frontend")));
