@@ -64,14 +64,22 @@
   }
 
   async function initCheckoutFromFirebase() {
-    if (!global.firebaseApi?.subscribeAuth || !global.firebaseApi?.subscribeCart) {
-      cartList.innerHTML = '<p class="muted">Checkout unavailable. Please refresh.</p>';
-      payBtn.disabled = true;
-      return;
-    }
-    const user = await waitForAuth();
-    console.log("Checkout user:", user);
-    console.log("Current user:", global.firebaseApi.getCurrentUser?.() || null);
+    try {
+      if (global.firebaseReady) await global.firebaseReady;
+      if (!global.firebaseApi?.subscribeAuth || !global.firebaseApi?.subscribeCart) {
+        cartList.innerHTML = '<p class="muted">Checkout unavailable. Please refresh.</p>';
+        payBtn.disabled = true;
+        return;
+      }
+      
+      const user = await global.firebaseApi.waitForAuth({ requireUser: true, timeoutMs: 15000 });
+      if (!user) {
+        cartList.innerHTML = '<p class="muted">Please sign in to checkout.</p>';
+        setTimeout(() => window.location.href = "./profile.html", 2000);
+        return;
+      }
+      
+      console.log("Checkout user:", user.uid);
 
     global.firebaseApi.subscribeCart((items) => {
       console.log("Checkout cart items:", items);

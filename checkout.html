@@ -3,121 +3,200 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VASTRA - Checkout</title>
+  <title>VASTRA — Secure Checkout</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg: #060608;
-      --surface: #101118;
-      --surface-2: #171925;
+      --surface: rgba(18, 19, 26, 0.75);
+      --surface-2: rgba(255, 255, 255, 0.03);
       --text: #f0ece4;
-      --muted: rgba(240, 236, 228, 0.65);
+      --muted: rgba(240, 236, 228, 0.5);
       --gold: #c9a96e;
-      --border: rgba(255, 255, 255, 0.1);
+      --border: rgba(255, 255, 255, 0.08);
       --danger: #ff5f6d;
+      --ease: cubic-bezier(0.23, 1, 0.32, 1);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
-    .container { max-width: 1120px; margin: 0 auto; padding: 30px 20px 60px; }
-    .heading { font-size: 28px; margin-bottom: 18px; }
-    .layout { display: grid; grid-template-columns: 1fr 360px; gap: 20px; align-items: start; }
-    .card { background: var(--surface); border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 16px 35px rgba(0, 0, 0, 0.3); padding: 18px; }
-    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+    body::before {
+      content: ''; position: fixed; inset: 0; z-index: -1;
+      background: radial-gradient(circle at 20% 0%, rgba(201, 169, 110, 0.03), transparent 40%),
+                  radial-gradient(circle at 80% 80%, rgba(74, 240, 212, 0.02), transparent 40%);
+    }
+
+    .container { max-width: 1120px; margin: 0 auto; padding: 60px 24px 100px; }
+    
+    .heading { font-family: 'Bebas Neue', sans-serif; font-size: 48px; letter-spacing: 0.04em; margin-bottom: 40px; animation: fadeInDown 0.8s var(--ease); }
+    
+    .layout { display: grid; grid-template-columns: 1fr 380px; gap: 40px; align-items: start; }
+    
+    .glass {
+      background: var(--surface);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 32px;
+      animation: fadeInUp 0.8s var(--ease) forwards;
+      opacity: 0;
+    }
+
+    .section-title { font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 0.1em; color: var(--gold); margin-bottom: 24px; text-transform: uppercase; }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
     .form-grid .full { grid-column: span 2; }
-    label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+    
+    .field { display: flex; flex-direction: column; gap: 8px; }
+    .field label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.15em; color: var(--muted); font-weight: 500; }
+    
     input, textarea {
       width: 100%;
       border-radius: 12px;
       border: 1px solid var(--border);
       background: var(--surface-2);
       color: var(--text);
-      padding: 12px;
+      padding: 16px;
       outline: none;
+      font-family: inherit;
+      font-size: 14px;
+      transition: all 0.3s;
     }
-    textarea { min-height: 90px; resize: vertical; }
-    .summary-item { display: grid; grid-template-columns: 54px 1fr auto; gap: 10px; align-items: center; margin-bottom: 12px; }
-    .summary-items { margin-top: 14px; }
-    .summary-item img { width: 54px; height: 60px; object-fit: cover; border-radius: 8px; }
-    .summary-item p { font-size: 14px; margin-bottom: 4px; }
-    .summary-item small { color: var(--muted); }
-    .summary-item strong { font-size: 14px; }
-    .row { display: flex; justify-content: space-between; margin-top: 10px; color: var(--muted); }
-    .row.total { color: var(--text); font-weight: 700; font-size: 18px; margin-top: 16px; }
+    input:focus, textarea:focus { border-color: var(--gold); background: rgba(255, 255, 255, 0.05); }
+    textarea { min-height: 110px; resize: none; }
+
+    .summary-item {
+      display: grid;
+      grid-template-columns: 64px 1fr auto;
+      gap: 16px;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .summary-item:last-child { border-bottom: 0; margin-bottom: 0; padding-bottom: 0; }
+    .summary-item img { width: 64px; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); }
+    .summary-item p { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+    .summary-item small { color: var(--muted); font-size: 12px; }
+    .summary-item strong { font-size: 14px; color: var(--gold); }
+
+    .summary-stats { margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border); }
+    .row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px; color: var(--muted); }
+    .row strong { color: var(--text); font-weight: 500; }
+    .row.total { color: var(--text); font-weight: 700; font-size: 20px; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border); }
+    .row.total #checkoutTotal { color: var(--gold); font-family: 'Bebas Neue', sans-serif; font-size: 28px; }
+
     .pay-btn {
       width: 100%;
-      margin-top: 16px;
+      margin-top: 32px;
       border: 0;
-      border-radius: 12px;
-      padding: 14px;
+      border-radius: 99px;
+      padding: 20px;
       background: var(--gold);
-      color: #111;
+      color: #060608;
       font-weight: 700;
+      font-size: 12px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
       cursor: pointer;
       display: inline-flex;
       justify-content: center;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
+      transition: all 0.4s var(--ease);
     }
+    .pay-btn:hover { background: #b6985d; transform: translateY(-2px); box-shadow: 0 10px 30px rgba(201, 169, 110, 0.2); }
+    .pay-btn:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
+
     .loader {
       display: none;
-      width: 15px;
-      height: 15px;
-      border: 2px solid rgba(0, 0, 0, 0.25);
-      border-top-color: #111;
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(0, 0, 0, 0.2);
+      border-top-color: #000;
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
     }
-    .error { color: var(--danger); font-size: 13px; margin-top: 10px; min-height: 18px; }
-    .muted { color: var(--muted); }
     @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes fadeInDown { from { opacity:0; transform: translateY(-20px); } to { opacity:1; transform: translateY(0); } }
+    @keyframes fadeInUp { from { opacity:0; transform: translateY(20px); } to { opacity:1; transform: translateY(0); } }
+
+    .error { color: var(--danger); font-size: 12px; margin-top: 16px; text-align: center; font-weight: 500; min-height: 18px; }
+    
     @media (max-width: 900px) {
       .layout { grid-template-columns: 1fr; }
       .form-grid { grid-template-columns: 1fr; }
       .form-grid .full { grid-column: span 1; }
+      .container { padding: 40px 20px; }
     }
   </style>
 </head>
 <body>
   <main class="container">
-    <h1 class="heading">Checkout</h1>
+    <h1 class="heading">Secure Checkout</h1>
     <div class="layout">
-      <section class="card">
+      <section class="glass" style="animation-delay: 0.1s;">
+        <h2 class="section-title">Shipping Details</h2>
         <form id="checkoutForm" novalidate>
           <div class="form-grid">
-            <div>
+            <div class="field">
               <label for="name">Full Name</label>
-              <input id="name" name="name" type="text" required>
+              <input id="name" name="name" type="text" placeholder="John Doe" required>
             </div>
-            <div>
-              <label for="email">Email</label>
-              <input id="email" name="email" type="email" required>
+            <div class="field">
+              <label for="email">Email Address</label>
+              <input id="email" name="email" type="email" placeholder="john@example.com" required>
             </div>
-            <div>
+            <div class="field">
               <label for="phone">Phone Number</label>
-              <input id="phone" name="phone" type="tel" required>
+              <input id="phone" name="phone" type="tel" placeholder="+91 XXXX XXX XXX" required>
             </div>
-            <div>
-              <label for="cityPincode">City / Pincode</label>
-              <input id="cityPincode" name="cityPincode" type="text" required>
+            <div class="field">
+              <label for="cityPincode">City & Pincode</label>
+              <input id="cityPincode" name="cityPincode" type="text" placeholder="Mumbai, 400001" required>
             </div>
-            <div class="full">
-              <label for="address">Address</label>
-              <textarea id="address" name="address" required></textarea>
+            <div class="full field">
+              <label for="address">Full Address</label>
+              <textarea id="address" name="address" placeholder="Flat, Street, Area..." required></textarea>
             </div>
           </div>
+          
+          <div class="summary-stats" style="border-top: 0; padding-top: 0; margin-top: 40px;">
+            <h2 class="section-title">Payment Method</h2>
+            <div style="background: var(--surface-2); border: 1px solid var(--border); padding: 16px; border-radius: 12px; font-size: 13px; display: flex; align-items: center; gap: 12px;">
+               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+               <span>Secure Online Payment via Razorpay (India)</span>
+            </div>
+          </div>
+
           <button id="payNowBtn" class="pay-btn" type="submit">
             <div id="checkoutLoader" class="loader"></div>
-            <span>Pay Now</span>
+            <span>Complete Payment</span>
           </button>
           <p id="checkoutError" class="error"></p>
         </form>
       </section>
 
-      <aside class="card">
-        <h2>Order Summary</h2>
+      <aside class="glass" style="animation-delay: 0.2s;">
+        <h2 class="section-title">Order Summary</h2>
         <div id="checkoutItems" class="summary-items"></div>
-        <div class="row"><span>Subtotal</span><strong id="checkoutSubtotal">₹0</strong></div>
-        <div class="row"><span>Shipping</span><strong>Free</strong></div>
-        <div class="row total"><span>Total</span><strong id="checkoutTotal">₹0</strong></div>
+        
+        <div class="summary-stats">
+          <div class="row"><span>Subtotal</span><strong id="checkoutSubtotal">₹0</strong></div>
+          <div class="row"><span>Shipping</span><strong style="color: #4af0d4;">Complimentary</strong></div>
+          <div class="row total"><span>Total Payable</span><strong id="checkoutTotal">₹0</strong></div>
+        </div>
+        
+        <p style="font-size: 11px; color: var(--muted); margin-top: 24px; line-height: 1.6;">
+          By completing your purchase you agree to our <span style="color: var(--gold); cursor: pointer;">Terms of Service</span>.
+        </p>
       </aside>
     </div>
   </main>
@@ -130,3 +209,4 @@
   <script src="./checkout.js"></script>
 </body>
 </html>
+

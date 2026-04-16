@@ -39,6 +39,12 @@ let appInitialized = false;
 let authObserverBound = false;
 const authListeners = new Set();
 
+let authReady = false;
+let resolveAuthReady = () => {};
+const authReadyPromise = new Promise((resolve) => {
+  resolveAuthReady = resolve;
+});
+
 let resolveFirebaseReady = () => {};
 window.firebaseReady = new Promise((resolve) => {
   resolveFirebaseReady = resolve;
@@ -49,15 +55,12 @@ window.__firebaseInitError = null;
 
 function getRuntimeFirebaseConfig() {
   const runtimeConfig = window.VASTRA_FIREBASE_CONFIG;
-  console.log("[VASTRA] Raw Firebase config:", runtimeConfig);
   if (!runtimeConfig || typeof runtimeConfig !== "object") {
     throw new Error(
       "Firebase config not found. Ensure window.VASTRA_FIREBASE_CONFIG is loaded before firebase-init.js"
     );
   }
-  const firebaseConfig = { ...DEFAULT_CONFIG, ...runtimeConfig };
-  console.log("[VASTRA] Config received:", firebaseConfig);
-  return firebaseConfig;
+  return { ...DEFAULT_CONFIG, ...runtimeConfig };
 }
 
 function getMissingConfigFields(firebaseConfig) {
@@ -78,16 +81,20 @@ function bindAuthObserverOnce() {
   authObserverBound = true;
   onAuthStateChanged(auth, (user) => {
     authUser = user || null;
+    authReady = true;
+    resolveAuthReady(true);
+    
     if (authUser) {
       console.log(`[VASTRA] Auth session active uid=${authUser.uid}`);
     } else {
       console.log("[VASTRA] Auth session cleared");
     }
+    
     authListeners.forEach((listener) => {
       try {
         listener(authUser);
       } catch {
-        // ignore listener errors
+        // ignore
       }
     });
   });
@@ -102,11 +109,9 @@ function initializeFirebaseRuntime(options = {}) {
     const firebaseConfig = getRuntimeFirebaseConfig();
     const missingFields = getMissingConfigFields(firebaseConfig);
     if (missingFields.length) {
-      throw new Error(`Firebase config invalid. Missing/placeholder fields: ${missingFields.join(", ")}`);
+      throw new Error(`Firebase config invalid. Missing fields: ${missingFields.join(", ")}`);
     }
 
-    console.log("CONFIG CHECK:", window.VASTRA_FIREBASE_CONFIG);
-    console.log("ACTIVE CONFIG:", firebaseConfig);
     const app = initializeApp(firebaseConfig);
     db = getFirestore(app);
     auth = getAuth(app);
@@ -115,7 +120,6 @@ function initializeFirebaseRuntime(options = {}) {
     appInitialized = true;
     bindAuthObserverOnce();
     console.log("[VASTRA] Firebase app initialized successfully");
-    console.log("[VASTRA] Firebase Auth initialized", auth);
     resolveFirebaseReady(true);
     return true;
   } catch (error) {
@@ -238,20 +242,29 @@ function subscribeCart(callback) {
       callback([]);
       return;
     }
-    unsubscribeSnapshot = onSnapshot(cartItemsRef(), (snapshot) => {
-      const items = snapshot.docs.map((docSnap) => {
-        const data = docSnap.data() || {};
-        return {
-          id: data.id || docSnap.id,
-          productId: data.productId || data.id || docSnap.id,
-          name: data.name || "Product",
-          price: Number(data.price || 0),
-          image: data.image || "",
-          qty: Math.max(1, Number(data.qty || 1))
-        };
-      });
-      callback(items);
-    });
+    unsubscribeSnapshot = onSnapshot(
+      cartItemsRef(),
+      (snapshot) => {
+        const items = snapshot.docs.map((docSnap) => {
+          const data = docSnap.data() || {};
+          return {
+            id: data.id || docSnap.id,
+            productId: data.productId || data.id || docSnap.id,
+            name: data.name || "Product",
+            price: Number(data.price || 0),
+            image: data.image || "",
+            qty: Math.max(1, Number(data.qty || 1))
+          };
+        });
+        callback(items);
+      },
+      (error) => {
+        // Critical: permission/network errors otherwise look like "empty cart"
+        window.__cartSnapshotError = error;
+        console.error("[VASTRA][cart] snapshot error:", error);
+        callback([]);
+      }
+    );
   });
   return () => {
     unsubscribeSnapshot();
@@ -494,29 +507,33 @@ function subscribeAuth(callback) {
 function waitForAuth(options = {}) {
   const requireUser = Boolean(options.requireUser);
   const timeoutMs = Number.isFinite(Number(options.timeoutMs)) ? Number(options.timeoutMs) : 8000;
+
   return new Promise((resolve) => {
     let settled = false;
-    const unsubscribe = subscribeAuth((user) => {
+
+    const finish = (result) => {
       if (settled) return;
-      if (requireUser && !user) return;
       settled = true;
-      try {
-        unsubscribe();
-      } catch {
-        // ignore
+      resolve(result);
+    };
+
+    authReadyPromise.then(() => {
+      if (requireUser) {
+        if (authUser) return finish(authUser);
+        // If user is required but not present yet, we wait for a listener update
+        const unsub = subscribeAuth((user) => {
+          if (user) {
+            unsub();
+            finish(user);
+          }
+        });
+        setTimeout(() => finish(authUser), timeoutMs);
+      } else {
+        finish(authUser);
       }
-      resolve(user || null);
     });
-    setTimeout(() => {
-      if (settled) return;
-      settled = true;
-      try {
-        unsubscribe();
-      } catch {
-        // ignore
-      }
-      resolve(authUser || null);
-    }, timeoutMs);
+
+    setTimeout(() => finish(authUser), timeoutMs);
   });
 }
 

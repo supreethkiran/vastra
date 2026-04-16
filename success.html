@@ -3,46 +3,180 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VASTRA - Order Success</title>
+  <title>VASTRA — Order Confirmed</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg: #060608;
-      --surface: #101118;
+      --surface: rgba(18, 19, 26, 0.72);
+      --surface2: rgba(255, 255, 255, 0.03);
       --text: #f0ece4;
-      --muted: rgba(240, 236, 228, 0.65);
+      --muted: rgba(240, 236, 228, 0.5);
       --gold: #c9a96e;
-      --border: rgba(255, 255, 255, 0.1);
+      --gold-dark: #b6985d;
+      --border: rgba(255, 255, 255, 0.08);
+      --ok: #57d39b;
+      --ease: cubic-bezier(0.23, 1, 0.32, 1);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: var(--bg); color: var(--text); font-family: Arial, sans-serif; min-height: 100vh; }
-    .container { max-width: 760px; margin: 0 auto; padding: 40px 20px; }
-    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; box-shadow: 0 14px 35px rgba(0,0,0,0.35); }
-    .ok { font-size: 44px; margin-bottom: 8px; }
-    h1 { margin-bottom: 8px; }
-    p { color: var(--muted); line-height: 1.5; }
-    .order-id { margin-top: 14px; color: var(--gold); font-weight: 700; }
-    .list { margin-top: 18px; border-top: 1px solid var(--border); padding-top: 14px; }
-    .item { display: flex; justify-content: space-between; margin-bottom: 8px; }
-    .total { margin-top: 16px; font-size: 20px; font-weight: 700; color: var(--gold); }
-    .actions { margin-top: 24px; display: flex; gap: 10px; flex-wrap: wrap; }
-    .btn { border-radius: 10px; padding: 10px 16px; text-decoration: none; font-weight: 700; }
-    .primary { background: var(--gold); color: #111; }
-    .ghost { border: 1px solid var(--border); color: var(--text); }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-font-smoothing: antialiased;
+    }
+    body::before {
+      content: ''; position: fixed; inset: 0; z-index: -1;
+      background:
+        radial-gradient(circle at 50% 0%, rgba(87, 211, 155, 0.04), transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(201, 169, 110, 0.04), transparent 40%);
+    }
+    .container { max-width: 620px; width: 100%; margin: 0 auto; padding: 40px 24px 80px; }
+    .card {
+      background: var(--surface);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      padding: 48px 40px;
+      box-shadow: 0 40px 80px rgba(0, 0, 0, 0.5);
+      text-align: center;
+      animation: popIn 0.7s var(--ease) forwards;
+    }
+    @keyframes popIn {
+      0% { opacity: 0; transform: scale(0.93) translateY(20px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    /* Animated check icon */
+    .check-wrap {
+      width: 80px; height: 80px;
+      margin: 0 auto 28px;
+      background: rgba(87, 211, 155, 0.1);
+      border: 2px solid rgba(87, 211, 155, 0.3);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      animation: pulse 2.5s ease infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(87, 211, 155, 0.2); }
+      50% { box-shadow: 0 0 0 16px rgba(87, 211, 155, 0); }
+    }
+    .check-icon { color: var(--ok); font-size: 36px; line-height: 1; }
+
+    h1 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 44px;
+      letter-spacing: 0.05em;
+      margin-bottom: 10px;
+      background: linear-gradient(135deg, #fff 30%, var(--gold));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .subtitle { color: var(--muted); font-size: 15px; line-height: 1.6; margin-bottom: 28px; }
+
+    .meta-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px 20px;
+      margin-bottom: 24px;
+      text-align: left;
+    }
+    .order-id {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px;
+      letter-spacing: 0.1em;
+      color: var(--gold);
+    }
+    .order-status { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+    .list { margin-top: 24px; border-top: 1px solid var(--border); padding-top: 20px; text-align: left; }
+    .item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+    .item strong { color: var(--text); font-weight: 600; }
+
+    .total {
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 14px;
+      color: var(--muted);
+    }
+    .total-amount {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      letter-spacing: 0.04em;
+      color: var(--gold);
+    }
+
+    .actions { margin-top: 32px; display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+    .btn {
+      border-radius: 99px;
+      padding: 14px 28px;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      transition: all 0.35s var(--ease);
+      cursor: pointer;
+      border: 0;
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+    .primary { background: var(--gold); color: #060608; }
+    .primary:hover { background: var(--gold-dark); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(201, 169, 110, 0.25); }
+    .ghost { border: 1px solid var(--border); color: var(--text); background: transparent; }
+    .ghost:hover { border-color: rgba(201, 169, 110, 0.5); color: var(--gold); transform: translateY(-2px); }
+
+    @media (max-width: 480px) {
+      .card { padding: 36px 24px; }
+      h1 { font-size: 36px; }
+      .actions { flex-direction: column; }
+      .btn { width: 100%; justify-content: center; }
+    }
   </style>
 </head>
 <body>
   <main class="container">
     <section class="card">
-      <div class="ok">✓</div>
-      <h1>Payment Successful</h1>
-      <p>Your order has been confirmed and is now being processed.</p>
-      <p class="order-id" id="orderIdText">Order ID: --</p>
-      <p class="order-id" id="orderStatusText" style="color: rgba(240, 236, 228, 0.75); font-weight: 600;">Status: --</p>
+      <div class="check-wrap">
+        <span class="check-icon">✓</span>
+      </div>
+      <h1>Order Confirmed</h1>
+      <p class="subtitle">Your payment was successful. Your order is being prepared with care.</p>
+
+      <div class="meta-box">
+        <div class="order-id" id="orderIdText">Order ID: —</div>
+        <div class="order-status" id="orderStatusText">Status: —</div>
+      </div>
+
       <div id="orderProducts" class="list"></div>
-      <p class="total" id="orderTotal">Total Paid: ₹0</p>
+      <div class="total">
+        <span>Total Paid</span>
+        <span class="total-amount" id="orderTotal">₹0</span>
+      </div>
+
       <div class="actions">
-        <a href="./1.html" class="btn primary">Continue Shopping</a>
-        <a href="./cart.html" class="btn ghost">Go to Cart</a>
+        <a href="./1.html" class="btn primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          Continue Shopping
+        </a>
+        <a href="./profile.html" class="btn ghost">View My Orders</a>
       </div>
     </section>
   </main>
@@ -58,34 +192,35 @@
 
     async function loadOrder() {
       if (!orderIdParam || !window.firebaseApi?.getOrderById) {
-        document.getElementById("orderProducts").innerHTML = "<p>Order not found</p>";
+        document.getElementById("orderProducts").innerHTML = "<p style='color:var(--muted);font-size:14px;'>No order details available.</p>";
         return;
       }
       try {
         const order = await window.firebaseApi.getOrderById(orderIdParam);
         if (!order) {
-          document.getElementById("orderProducts").innerHTML = "<p>Order not found</p>";
+          document.getElementById("orderProducts").innerHTML = "<p style='color:var(--muted);font-size:14px;'>Order not found.</p>";
           return;
         }
         document.getElementById("orderStatusText").textContent = "Status: " + String(order.status || "paid");
         if (!Array.isArray(order.items) || !order.items.length) {
-          document.getElementById("orderProducts").innerHTML = "<p>Order not found</p>";
+          document.getElementById("orderProducts").innerHTML = "<p style='color:var(--muted);font-size:14px;'>No items in order.</p>";
           return;
         }
         document.getElementById("orderProducts").innerHTML = order.items
           .map((item) => `
             <div class="item">
-              <span>${item.name} x ${item.qty}</span>
+              <span>${item.name} × ${item.qty}</span>
               <strong>${window.VastraCart.formatPrice(item.price * item.qty)}</strong>
             </div>
           `)
           .join("");
-        document.getElementById("orderTotal").textContent = "Total Paid: " + window.VastraCart.formatPrice(order.total || 0);
+        document.getElementById("orderTotal").textContent = window.VastraCart.formatPrice(order.total || 0);
       } catch (error) {
-        document.getElementById("orderProducts").innerHTML = `<p>${error.message || "Order not found"}</p>`;
+        document.getElementById("orderProducts").innerHTML = `<p style='color:var(--muted);font-size:14px;'>${error.message || "Order not found"}</p>`;
       }
     }
     loadOrder();
   </script>
 </body>
 </html>
+

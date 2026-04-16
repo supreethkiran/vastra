@@ -135,6 +135,10 @@
         }
         console.log("[VASTRA][cart] binding Firestore cart…");
         startCart();
+        // Surface snapshot errors in UI.
+        if (global.__cartSnapshotError) {
+          showToast("Cart sync blocked. Check Firestore rules.");
+        }
       });
     })();
   }
@@ -153,10 +157,16 @@
   }
 
   async function addToCart(product, quantity) {
+    if (window.firebaseReady) await window.firebaseReady;
     const user = await waitForAuth(12000);
     if (!user) {
-      showToast("Please sign in to use cart");
-      window.location.href = "/#/login";
+      if (typeof showToast === 'function') showToast("Please sign in to add items.");
+      const loginModal = document.getElementById("loginModal");
+      if (loginModal) {
+        loginModal.classList.add("open");
+      } else {
+        window.location.href = "./profile.html";
+      }
       return cloneCart();
     }
     const qty = Math.max(1, Number(quantity || 1));
@@ -340,5 +350,11 @@
     showToast,
     subscribe
   };
-  bindRemoteCart();
+  
+  // Initialize cart binding once firebase is ready
+  if (global.firebaseReady) {
+    global.firebaseReady.then(() => bindRemoteCart());
+  } else {
+    bindRemoteCart();
+  }
 })(window);

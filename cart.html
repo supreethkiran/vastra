@@ -3,65 +3,179 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VASTRA - Cart</title>
+  <title>VASTRA — Your Cart</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg: #060608;
-      --surface: #101118;
-      --surface-2: #171925;
+      --surface: rgba(18, 19, 26, 0.7);
+      --surface-2: rgba(255, 255, 255, 0.03);
       --text: #f0ece4;
-      --muted: rgba(240, 236, 228, 0.65);
+      --muted: rgba(240, 236, 228, 0.55);
       --gold: #c9a96e;
-      --border: rgba(255, 255, 255, 0.1);
+      --gold-dark: #b6985d;
+      --border: rgba(255, 255, 255, 0.08);
+      --ease: cubic-bezier(0.23, 1, 0.32, 1);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
-    .container { max-width: 1100px; margin: 0 auto; padding: 28px 20px 60px; }
-    .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
-    .title { font-size: 28px; font-weight: 700; letter-spacing: 0.03em; }
-    .link { color: var(--gold); text-decoration: none; font-size: 14px; }
-    .layout { display: grid; grid-template-columns: 1fr 320px; gap: 20px; align-items: start; }
-    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 18px 40px rgba(0, 0, 0, 0.3); }
-    .cart-items { padding: 18px; }
-    .item { display: grid; grid-template-columns: 92px 1fr auto; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--border); }
-    .item:last-child { border-bottom: 0; }
-    .item img { width: 92px; height: 110px; border-radius: 12px; object-fit: cover; }
-    .item h3 { font-size: 16px; margin-bottom: 8px; }
-    .item p { color: var(--gold); margin-bottom: 12px; font-weight: 700; }
-    .qty { display: inline-flex; align-items: center; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
-    .qty button { background: var(--surface-2); color: var(--text); border: 0; width: 34px; height: 34px; cursor: pointer; font-size: 18px; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
-    .qty span { width: 36px; text-align: center; font-size: 14px; }
-    .remove { align-self: center; background: var(--surface-2); border: 1px solid var(--border); color: var(--muted); border-radius: 999px; width: 40px; height: 40px; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
-    .summary { padding: 18px; }
-    .summary h2 { font-size: 18px; margin-bottom: 14px; }
-    .row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; color: var(--muted); }
-    .row.total { color: var(--text); font-size: 18px; margin-top: 16px; font-weight: 700; }
-    .btn { width: 100%; margin-top: 16px; border: 0; border-radius: 12px; padding: 14px; background: var(--gold); color: #111; font-weight: 700; cursor: pointer; }
-    .empty { text-align: center; padding: 45px 20px; color: var(--muted); }
-    @media (max-width: 900px) {
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    body::before {
+      content: ''; position: fixed; inset: 0; z-index: -1;
+      background: radial-gradient(circle at 80% 0%, rgba(201, 169, 110, 0.04), transparent 50%),
+                  radial-gradient(circle at 10% 90%, rgba(74, 240, 212, 0.02), transparent 40%);
+    }
+
+    .container { max-width: 1240px; margin: 0 auto; padding: 60px 24px 100px; }
+    
+    .topbar { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 40px; animation: fadeInDown 0.8s var(--ease); }
+    .title { font-family: 'Bebas Neue', sans-serif; font-size: 48px; letter-spacing: 0.04em; }
+    .link { color: var(--muted); text-decoration: none; font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; transition: color 0.3s; border-bottom: 1px solid transparent; }
+    .link:hover { color: var(--gold); border-bottom-color: var(--gold); }
+
+    .layout { display: grid; grid-template-columns: 1fr 380px; gap: 40px; align-items: start; }
+    
+    .glass {
+      background: var(--surface);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 32px;
+    }
+
+    .cart-items { min-height: 200px; }
+    .item {
+      display: grid;
+      grid-template-columns: 140px 1fr auto;
+      gap: 32px;
+      padding: 32px 0;
+      border-bottom: 1px solid var(--border);
+      transition: transform 0.3s var(--ease);
+    }
+    .item:hover { transform: translateX(8px); }
+    .item:first-child { padding-top: 0; }
+    .item:last-child { border-bottom: 0; padding-bottom: 0; }
+    
+    .item-visual { position: relative; width: 140px; height: 180px; overflow: hidden; border-radius: 12px; }
+    .item img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s var(--ease); }
+    .item:hover img { transform: scale(1.08); }
+
+    .item-info { display: flex; flex-direction: column; }
+    .item h3 { font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 0.03em; margin-bottom: 8px; }
+    .item-cat { font-size: 11px; text-transform: uppercase; color: var(--muted); letter-spacing: 0.15em; margin-bottom: 16px; }
+    .item p { font-size: 18px; font-weight: 500; color: var(--gold); margin-bottom: 24px; }
+
+    .qty {
+      display: inline-flex;
+      align-items: center;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      padding: 4px;
+      width: fit-content;
+    }
+    .qty button {
+      background: transparent;
+      color: var(--text);
+      border: 0;
+      width: 32px;
+      height: 32px;
+      cursor: pointer;
+      font-size: 20px;
+      border-radius: 50%;
+      transition: background 0.3s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .qty button:hover { background: rgba(255,255,255,0.08); }
+    .qty span { width: 40px; text-align: center; font-size: 14px; font-weight: 600; }
+
+    .remove {
+      align-self: flex-start;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 50%;
+      width: 44px;
+      height: 44px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.3s;
+    }
+    .remove:hover { border-color: #ff5f6d; color: #ff5f6d; background: rgba(255, 95, 109, 0.05); }
+
+    .summary { position: sticky; top: 120px; }
+    .summary h2 { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 0.05em; margin-bottom: 24px; }
+    
+    .divider { height: 1px; background: var(--border); margin: 24px 0; }
+    
+    .row { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 16px; font-size: 14px; color: var(--muted); }
+    .row strong { color: var(--text); font-weight: 500; }
+    .row.total { color: var(--text); font-size: 20px; margin-top: 8px; font-weight: 700; border-top: 1px solid var(--border); padding-top: 24px; }
+    .row.total #total { color: var(--gold); font-size: 24px; font-family: 'Bebas Neue', sans-serif; }
+
+    .btn {
+      width: 100%;
+      margin-top: 24px;
+      border: 0;
+      border-radius: 99px;
+      padding: 18px;
+      background: var(--gold);
+      color: #060608;
+      font-size: 12px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.4s var(--ease);
+      position: relative; overflow: hidden;
+    }
+    .btn:hover { background: var(--gold-dark); transform: translateY(-2px); box-shadow: 0 10px 30px rgba(201, 169, 110, 0.25); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; filter: grayscale(1); }
+
+    .empty { text-align: center; padding: 100px 40px; color: var(--muted); }
+    .empty h3 { font-family: 'Bebas Neue', sans-serif; font-size: 32px; color: var(--text); margin-bottom: 12px; }
+    .empty p { font-size: 14px; margin-bottom: 24px; }
+
+    @keyframes fadeInDown { from { opacity:0; transform: translateY(-20px); } to { opacity:1; transform: translateY(0); } }
+    @keyframes fadeInUp { from { opacity:0; transform: translateY(20px); } to { opacity:1; transform: translateY(0); } }
+
+    @media (max-width: 1024px) {
       .layout { grid-template-columns: 1fr; }
-      .item { grid-template-columns: 72px 1fr auto; gap: 10px; }
-      .item img { width: 72px; height: 88px; }
-      .remove { width: 44px; height: 44px; font-size: 18px; }
-      .qty button { width: 36px; height: 36px; }
+      .summary { position: static; }
+    }
+    @media (max-width: 600px) {
+      .item { grid-template-columns: 100px 1fr; }
+      .item-visual { width: 100px; height: 130px; }
+      .remove { position: absolute; top: 32px; right: 0; }
     }
   </style>
 </head>
 <body>
   <main class="container">
     <div class="topbar">
-      <h1 class="title">Shopping Cart</h1>
-      <a class="link" href="./1.html">Continue Shopping</a>
+      <h1 class="title">Shopping Bag</h1>
+      <a class="link" href="./1.html">Explore Collections</a>
     </div>
 
     <div class="layout">
-      <section class="card cart-items" id="cartItems"></section>
-      <aside class="card summary">
+      <section class="glass cart-items" id="cartItems" style="animation: fadeInUp 0.8s var(--ease) 0.1s forwards; opacity: 0;"></section>
+      
+      <aside class="glass summary" style="animation: fadeInUp 0.8s var(--ease) 0.2s forwards; opacity: 0;">
         <h2>Order Summary</h2>
         <div class="row"><span>Subtotal</span><strong id="subtotal">₹0</strong></div>
-        <div class="row"><span>Shipping</span><strong>Free</strong></div>
+        <div class="row"><span>Shipping</span><strong style="color: #4af0d4;">Calculated at checkout</strong></div>
+        <div class="row"><span>Tax Estimate</span><strong>₹0</strong></div>
         <div class="row total"><span>Total</span><strong id="total">₹0</strong></div>
-        <button class="btn" id="checkoutBtn">Proceed to Checkout</button>
+        <button class="btn" id="checkoutBtn">Checkout Securely</button>
+        <p style="text-align: center; font-size: 10px; color: var(--muted); margin-top: 16px; letter-spacing: 0.05em;">Complimentary shipping on orders over ₹10,000</p>
       </aside>
     </div>
   </main>
@@ -92,7 +206,12 @@
     function renderCartPage() {
       const cart = getSafeCart();
       if (!cart.length) {
-        cartItems.innerHTML = '<div class="empty"><h3>Your cart is empty</h3><p>Add products to continue checkout.</p></div>';
+        cartItems.innerHTML = `
+          <div class="empty">
+            <h3>Your bag is empty</h3>
+            <p>Elevate your wardrobe with our latest seasonal drop.</p>
+            <a href="./1.html" class="link" style="font-size: 11px; border-bottom: 1px solid var(--gold); color: var(--gold);">Go back to store</a>
+          </div>`;
         subtotal.textContent = "₹0";
         total.textContent = "₹0";
         checkoutBtn.disabled = true;
@@ -101,17 +220,22 @@
 
       cartItems.innerHTML = cart.map((item) => `
         <article class="item">
-          <img src="${item.image}" alt="${item.name}">
-          <div>
+          <div class="item-visual">
+            <img src="${item.image}" alt="${item.name}">
+          </div>
+          <div class="item-info">
+            <span class="item-cat">Collection Piece</span>
             <h3>${item.name}</h3>
             <p>${formatSafePrice(item.price)}</p>
             <div class="qty">
-              <button type="button" data-id="${item.id}" data-action="dec">-</button>
+              <button type="button" data-id="${item.id}" data-action="dec" aria-label="Decrease quantity">−</button>
               <span>${item.qty}</span>
-              <button type="button" data-id="${item.id}" data-action="inc">+</button>
+              <button type="button" data-id="${item.id}" data-action="inc" aria-label="Increase quantity">+</button>
             </div>
           </div>
-          <button class="remove" data-id="${item.id}" data-action="remove">x</button>
+          <button class="remove" data-id="${item.id}" data-action="remove" aria-label="Remove item">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button>
         </article>
       `).join("");
 
@@ -137,8 +261,23 @@
       window.location.href = "./checkout.html";
     });
 
-    renderCartPage();
-    window.VastraCart?.subscribe?.(renderCartPage);
+    if (window.firebaseReady) {
+      window.firebaseReady.then(() => renderCartPage());
+    } else {
+      renderCartPage();
+    }
+    
+    if (window.VastraCart && typeof window.VastraCart.subscribe === "function") {
+      window.VastraCart.subscribe(renderCartPage);
+    } else {
+      const poll = setInterval(() => {
+        if (window.VastraCart?.subscribe) {
+          window.VastraCart.subscribe(renderCartPage);
+          clearInterval(poll);
+        }
+      }, 500);
+    }
   </script>
 </body>
 </html>
+
