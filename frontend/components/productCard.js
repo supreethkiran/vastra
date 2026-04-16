@@ -1,6 +1,7 @@
 export function productCard(product) {
   const rating = Number(product.rating || 4.4).toFixed(1);
-  const stock = Number(product.stock || 12);
+  const stock = Number.isFinite(Number(product.stock)) ? Number(product.stock) : 12;
+  const outOfStock = stock <= 0;
   const secondaryImage = product.secondaryImage || product.image;
   const normalizedBadgeType = String(product.badgeType || product.badge || "").trim().toLowerCase();
   const badge =
@@ -14,14 +15,17 @@ export function productCard(product) {
   return `
     <article class="card product-card" data-card="${product.id}">
       <div class="product-image-wrap">
-        ${badge ? `<div class="badge-row"><span class="badge ${badge.className}">${badge.label}</span></div>` : ""}
+        <div class="badge-row">
+          ${badge ? `<span class="badge ${badge.className}">${badge.label}</span>` : ""}
+          ${outOfStock ? `<span class="badge" style="border-color: rgba(255,107,122,.5); background: rgba(255,107,122,.12);">Out of stock</span>` : ""}
+        </div>
         <img src="${product.image}" alt="${product.name}" loading="lazy" decoding="async">
         <img class="product-hover-image" src="${secondaryImage}" alt="${product.name}" loading="lazy" decoding="async">
         <button class="wishlist-btn" data-wish="${product.id}" aria-label="Wishlist">♡</button>
         <div class="product-overlay" aria-hidden="true">
           <div class="quick-actions">
             <a class="btn ghost" href="#/product/${product.id}">View Product</a>
-            <button class="btn primary" data-add="${product.id}">Add to Cart</button>
+            <button class="btn primary" data-add="${product.id}" ${outOfStock ? "disabled" : ""}>${outOfStock ? "Sold out" : "Add to Cart"}</button>
           </div>
         </div>
       </div>
@@ -30,12 +34,12 @@ export function productCard(product) {
         <p class="muted">${product.category}</p>
         <div class="row">
           <span class="pill">⭐ ${rating}</span>
-          <span class="muted">${stock < 8 ? `${stock} in stock` : "In stock"}</span>
+          <span class="muted">${outOfStock ? "Sold out" : stock < 8 ? `${stock} in stock` : "In stock"}</span>
         </div>
         <p class="price">₹${Number(product.price).toLocaleString("en-IN")}</p>
         <div class="row" style="gap:8px;">
           <a class="btn" href="#/product/${product.id}">View</a>
-          <button class="btn primary" data-add="${product.id}">Add</button>
+          <button class="btn primary" data-add="${product.id}" ${outOfStock ? "disabled" : ""}>${outOfStock ? "Sold out" : "Add"}</button>
         </div>
       </div>
     </article>

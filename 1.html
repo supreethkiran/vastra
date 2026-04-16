@@ -801,25 +801,35 @@
     }
     .why-text { font-size: 12px; line-height: 1.75; color: var(--muted); }
 
-    /* GLASS TESTIMONIALS */
-    .testimonials-section { padding: 80px 0 120px; }
-    .testimonials-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-    .testimonial-card {
-      padding: 32px; background: var(--surface2);
+    /* Brand strip (replaces testimonials) */
+    .brand-strip { padding: 56px 0 56px; }
+    .brand-strip-inner{
       border: 1px solid var(--border);
-      position: relative; overflow: hidden;
-      transition: border-color 0.4s, transform 0.4s var(--ease);
       border-radius: 14px;
+      padding: 22px 20px;
+      background: linear-gradient(145deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 14px;
     }
-    .testimonial-card:hover { border-color: rgba(201,169,110,0.3); transform: translateY(-4px); }
-    .testimonial-card::before {
-      content: '"'; position: absolute; top: 10px; right: 20px;
-      font-family: 'Cormorant Garamond', serif; font-size: 120px;
-      color: rgba(201,169,110,0.06); line-height: 1; -webkit-user-select: none; user-select: none;
+    .brand-strip p{
+      color: rgba(245,245,245,0.74);
+      letter-spacing: .06em;
+      font-size: 11px;
+      text-transform: uppercase;
     }
-    .testimonial-stars { color: var(--gold); font-size: 13px; letter-spacing: 4px; margin-bottom: 18px; }
-    .testimonial-text { font-size: 13px; line-height: 1.8; color: var(--muted); margin-bottom: 20px; font-weight: 300; }
-    .testimonial-author { font-size: 11px; letter-spacing: 0.1em; color: var(--text); }
+    .brand-strip .pill{
+      border-radius: 999px;
+      padding: 7px 12px;
+      border: 1px solid rgba(194,168,120,0.32);
+      background: rgba(194,168,120,0.12);
+      color: var(--gold2);
+      letter-spacing: .18em;
+      font-size: 9px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
 
     /* JOURNAL */
     .journal-section { padding: 80px 0 100px; }
@@ -1510,31 +1520,12 @@
   </div>
 </section>
 
-<!-- TESTIMONIALS -->
-<section class="testimonials-section">
+<!-- BRAND STRIP -->
+<section class="brand-strip">
   <div class="wrap">
-    <div class="sec-head reveal">
-      <div>
-        <p class="sec-label">What they say</p>
-        <h2 class="sec-title">The VASTRA Verdict</h2>
-      </div>
-    </div>
-    <div class="testimonials-grid">
-      <div class="testimonial-card reveal reveal-delay-1">
-        <div class="testimonial-stars">★★★★★</div>
-        <p class="testimonial-text">"Finally a brand that gets the Gen Z aesthetic right. The quality is insane — I've washed my hoodie 20 times and it still looks brand new."</p>
-        <p class="testimonial-author"><strong>Aryan K.</strong> &nbsp;·&nbsp; Mumbai</p>
-      </div>
-      <div class="testimonial-card reveal reveal-delay-2">
-        <div class="testimonial-stars">★★★★★</div>
-        <p class="testimonial-text">"I've tried every premium streetwear brand. VASTRA is different — it has soul. The minimal cuts, the perfect weight of the fabric. Chef's kiss."</p>
-        <p class="testimonial-author"><strong>Priya R.</strong> &nbsp;·&nbsp; Bangalore</p>
-      </div>
-      <div class="testimonial-card reveal reveal-delay-3">
-        <div class="testimonial-stars">★★★★★</div>
-        <p class="testimonial-text">"Wore the Noir Overcoat to a rooftop event and got asked about it 7 times. Delivered in 2 days too. VASTRA is my go-to now, no cap."</p>
-        <p class="testimonial-author"><strong>Dev M.</strong> &nbsp;·&nbsp; Delhi</p>
-      </div>
+    <div class="brand-strip-inner reveal">
+      <p>Premium streetwear. Built for everyday dominance.</p>
+      <span class="pill">Drop 01 • 2026</span>
     </div>
   </div>
 </section>

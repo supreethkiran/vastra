@@ -59,9 +59,18 @@ export function addToCart(product) {
     showToastSafe("Please sign in to use cart");
     throw new Error("Please sign in to use cart");
   }
+  const stock = Number.isFinite(Number(product?.stock)) ? Number(product.stock) : null;
+  if (stock !== null && stock <= 0) {
+    showToastSafe("Out of stock");
+    throw new Error("Out of stock");
+  }
   const cart = getLocalCart();
   const existing = cart.find((item) => item.id === product.id);
   if (existing) {
+    if (stock !== null && Number(existing.qty || 0) + 1 > stock) {
+      showToastSafe("Not enough stock");
+      throw new Error("Not enough stock");
+    }
     existing.qty += 1;
     if (product?.selectedSize && !existing.selectedSize) existing.selectedSize = product.selectedSize;
     if (product?.selectedSize && existing.selectedSize && existing.selectedSize !== product.selectedSize) {

@@ -7,17 +7,63 @@ import { getRecentlyViewed } from "../services/recentService.js";
 
 export async function shopPage(app) {
   app.innerHTML = `
-    <section class="hero" id="vastraHero">
-      <div class="hero-inner hero-animate">
-        <span class="hero-eyebrow">Premium drops • Limited stock</span>
-        <h1 class="hero-title">Wear the statement. Own the room.</h1>
-        <p class="hero-subtitle">Vastra blends modern silhouettes with premium fabrics—built for daily flex, night plans, and everything in-between.</p>
-        <div class="hero-cta-row">
-          <button id="heroShopNowBtn" class="btn primary" type="button">Shop Now</button>
-          <a class="btn ghost" href="#/wishlist">Explore Wishlist</a>
+    <section class="hero-video" id="vastraHeroVideo">
+      <video class="hero-video-el" autoplay muted loop playsinline preload="metadata" poster="">
+        <source src="/assets/hero.mp4" type="video/mp4" />
+      </video>
+      <div class="hero-video-overlay">
+        <div class="hero-video-inner hero-animate">
+          <span class="hero-eyebrow">Premium drops • Limited stock</span>
+          <h1 class="hero-title">VASTRA</h1>
+          <p class="hero-subtitle">Wear Confidence. Premium silhouettes built for everyday dominance.</p>
+          <div class="hero-cta-row">
+            <button id="heroShopNowBtn" class="btn primary" type="button">Shop Now</button>
+            <a class="btn ghost" href="#/wishlist">Explore Wishlist</a>
+          </div>
+        </div>
+        <div class="scroll-indicator" aria-hidden="true"></div>
+      </div>
+    </section>
+
+    <section id="outfit-generator" class="outfit-generator reveal-once" aria-label="AI outfit generator">
+      <div class="row" style="justify-content:space-between;align-items:end;gap:12px;">
+        <div>
+          <h2 class="section-title" style="margin:0;">Generate Your Outfit</h2>
+          <p class="muted" style="margin-top:6px;">A smart mix based on your browsing and category balance.</p>
+        </div>
+        <button id="generateOutfitBtn" class="btn primary" type="button">Generate</button>
+      </div>
+      <div id="outfitResult" class="scroll-row" style="margin-top:12px;"></div>
+    </section>
+
+    <section class="drop-highlight reveal-once" id="dropHighlight">
+      <div class="drop-highlight-inner">
+        <div class="drop-content">
+          <div class="drop-kicker">NEW DROP</div>
+          <h2 class="drop-title">Built for movement.<br>Designed for presence.</h2>
+          <p class="drop-subtitle">Minimal silhouettes, premium weight, and a fit that holds its shape—day to night.</p>
+          <div class="drop-actions">
+            <button id="exploreDropBtn" class="btn primary drop-cta" type="button">Explore Drop</button>
+            <a class="btn ghost" href="#/wishlist">Save favorites</a>
+          </div>
         </div>
       </div>
-      <div class="scroll-indicator" aria-hidden="true"></div>
+    </section>
+
+    <section class="product-showcase reveal-once" aria-label="Featured products">
+      <div class="row" style="justify-content:space-between;align-items:end;gap:12px;">
+        <h2 class="section-title" style="margin:0;">Featured</h2>
+        <div class="muted" style="font-size:12px;">Swipe to explore</div>
+      </div>
+      <div class="scroll-row" id="scrollProducts" aria-label="Horizontal product showcase"></div>
+    </section>
+
+    <section class="recommendations reveal-once" aria-label="Recommended products">
+      <div class="row" style="justify-content:space-between;align-items:end;gap:12px;">
+        <h2 class="section-title" style="margin:0;">Recommended for you</h2>
+        <div class="muted" id="recoHint" style="font-size:12px;"></div>
+      </div>
+      <div class="scroll-row" id="recommendedProducts" aria-label="Recommendations"></div>
     </section>
 
     <h2 class="section-title fade-in" style="margin-top:6px;">Drop Collection</h2>
@@ -43,12 +89,41 @@ export async function shopPage(app) {
   const recentWrap = document.getElementById("recentWrap");
   const recommendedWrap = document.getElementById("recommendedWrap");
   const heroShopNowBtn = document.getElementById("heroShopNowBtn");
-  const heroEl = document.getElementById("vastraHero");
+  const heroEl = document.getElementById("vastraHeroVideo");
+  const exploreDropBtn = document.getElementById("exploreDropBtn");
+  const scrollProductsEl = document.getElementById("scrollProducts");
+  const recommendedProductsEl = document.getElementById("recommendedProducts");
+  const recoHintEl = document.getElementById("recoHint");
+  const generateOutfitBtn = document.getElementById("generateOutfitBtn");
+  const outfitResultEl = document.getElementById("outfitResult");
+
+  // Reveal animations on entry (once)
+  if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    const targets = app.querySelectorAll(".reveal-once");
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add("in");
+          io.unobserve(entry.target);
+        });
+      },
+      { threshold: 0.18 }
+    );
+    targets.forEach((t) => io.observe(t));
+  } else {
+    app.querySelectorAll(".reveal-once").forEach((el) => el.classList.add("in"));
+  }
 
   heroShopNowBtn?.addEventListener("click", () => {
     const toolbar = document.querySelector(".toolbar");
     toolbar?.scrollIntoView({ behavior: "smooth", block: "start" });
     searchInput?.focus?.();
+  });
+
+  exploreDropBtn?.addEventListener("click", () => {
+    const toolbar = document.querySelector(".toolbar");
+    toolbar?.scrollIntoView({ behavior: "smooth", block: "start" });
   });
 
   // Parallax background (minimal JS)
@@ -112,6 +187,190 @@ export async function shopPage(app) {
     `;
   }
 
+  function renderShowcase(products) {
+    if (!scrollProductsEl) return;
+    const list = Array.isArray(products) ? products : [];
+    const featured = [...list]
+      .sort((a, b) => Number(b.rating || 0) - Number(a.rating || 0))
+      .slice(0, 10);
+    if (!featured.length) {
+      scrollProductsEl.innerHTML = `<div class="card empty-state" style="min-width:260px;"><p class="muted">No featured products yet.</p></div>`;
+      return;
+    }
+    scrollProductsEl.innerHTML = featured
+      .map(
+        (p) => `
+        <a class="showcase-card" href="#/product/${p.id}" data-showcase="${p.id}">
+          <div class="showcase-img">
+            <img src="${p.image}" alt="${p.name}" loading="lazy" decoding="async">
+          </div>
+          <div class="showcase-body">
+            <div class="showcase-name">${p.name}</div>
+            <div class="showcase-meta">
+              <span class="muted">${p.category || "Essentials"}</span>
+              <strong class="price">₹${Number(p.price || 0).toLocaleString("en-IN")}</strong>
+            </div>
+          </div>
+        </a>
+      `
+      )
+      .join("");
+
+    // Optional slow auto-scroll (pauses on hover/touch)
+    if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      let raf = 0;
+      let paused = false;
+      const step = () => {
+        if (!scrollProductsEl || paused) {
+          raf = requestAnimationFrame(step);
+          return;
+        }
+        scrollProductsEl.scrollLeft += 0.35;
+        if (scrollProductsEl.scrollLeft + scrollProductsEl.clientWidth >= scrollProductsEl.scrollWidth - 2) {
+          scrollProductsEl.scrollLeft = 0;
+        }
+        raf = requestAnimationFrame(step);
+      };
+      const start = () => {
+        if (raf) return;
+        raf = requestAnimationFrame(step);
+      };
+      const stop = () => {
+        if (!raf) return;
+        cancelAnimationFrame(raf);
+        raf = 0;
+      };
+      scrollProductsEl.addEventListener("pointerenter", () => (paused = true));
+      scrollProductsEl.addEventListener("pointerleave", () => (paused = false));
+      scrollProductsEl.addEventListener("touchstart", () => (paused = true), { passive: true });
+      scrollProductsEl.addEventListener("touchend", () => (paused = false), { passive: true });
+      window.addEventListener(
+        "hashchange",
+        () => {
+          stop();
+        },
+        { once: true }
+      );
+      start();
+    }
+  }
+
+  function renderSmartRecommendations(products) {
+    if (!recommendedProductsEl) return;
+    const list = Array.isArray(products) ? products : [];
+    let recommended = list;
+    let hint = "";
+    try {
+      const lastViewedCategory = localStorage.getItem("lastViewedCategory") || "";
+      if (lastViewedCategory) {
+        recommended = list.filter((p) => String(p.category || "").toLowerCase() === String(lastViewedCategory).toLowerCase());
+        hint = `Because you viewed ${lastViewedCategory}`;
+      }
+    } catch {
+      // ignore storage errors
+    }
+    if (!recommended.length) {
+      recommended = list.slice(0, 6);
+      hint = "Top picks";
+    }
+    if (recoHintEl) recoHintEl.textContent = hint;
+    recommendedProductsEl.innerHTML = recommended
+      .slice(0, 10)
+      .map(
+        (p) => `
+        <a class="showcase-card compact" href="#/product/${p.id}" data-reco="${p.id}">
+          <div class="showcase-img">
+            <img src="${p.image}" alt="${p.name}" loading="lazy" decoding="async">
+          </div>
+          <div class="showcase-body">
+            <div class="showcase-name">${p.name}</div>
+            <div class="showcase-meta">
+              <span class="muted">${p.category || "Essentials"}</span>
+              <strong class="price">₹${Number(p.price || 0).toLocaleString("en-IN")}</strong>
+            </div>
+          </div>
+        </a>
+      `
+      )
+      .join("");
+  }
+
+  function generateOutfit(products) {
+    const list = Array.isArray(products) ? products : [];
+    if (!list.length) return [];
+    const by = (pred) => list.filter((p) => pred(String(p.category || "")));
+    const tops = by((c) => /top|tee|t-?shirt|shirt|hoodie|sweat|essentials/i.test(c));
+    const bottoms = by((c) => /bottom|jean|denim|trouser|pant|jogger|short/i.test(c));
+    const shoes = by((c) => /shoe|sneaker|footwear/i.test(c));
+
+    let preferred = "";
+    try {
+      preferred = localStorage.getItem("lastViewedCategory") || "";
+    } catch {
+      // ignore
+    }
+
+    const pick = (arr) => (arr && arr.length ? arr[Math.floor(Math.random() * arr.length)] : null);
+    let top = pick(tops);
+    let bottom = pick(bottoms);
+    let shoe = pick(shoes);
+
+    if (preferred) {
+      const preferredItems = list.filter((p) => String(p.category || "").toLowerCase() === preferred.toLowerCase());
+      if (preferredItems.length) top = pick(preferredItems) || top;
+    }
+
+    const uniq = new Map();
+    [top, bottom, shoe].filter(Boolean).forEach((p) => uniq.set(String(p.id), p));
+    return Array.from(uniq.values());
+  }
+
+  function renderOutfit(outfit) {
+    if (!outfitResultEl) return;
+    const items = Array.isArray(outfit) ? outfit : [];
+    if (!items.length) {
+      outfitResultEl.innerHTML = `<div class="card empty-state" style="min-width:260px;"><p class="muted">No outfit combos yet. Add more categories (tops/bottoms/shoes) to products.</p></div>`;
+      return;
+    }
+    outfitResultEl.innerHTML = items
+      .map(
+        (p) => `
+        <a class="showcase-card compact" href="#/product/${p.id}">
+          <div class="showcase-img"><img src="${p.image}" alt="${p.name}" loading="lazy" decoding="async"></div>
+          <div class="showcase-body">
+            <div class="showcase-name">${p.name}</div>
+            <div class="showcase-meta">
+              <span class="muted">${p.category || "Essentials"}</span>
+              <strong class="price">₹${Number(p.price || 0).toLocaleString("en-IN")}</strong>
+            </div>
+          </div>
+        </a>
+      `
+      )
+      .join("");
+  }
+
+  function bindBehaviorTracking(productsById) {
+    // Track category preference for smart recommendations.
+    app.addEventListener(
+      "click",
+      (e) => {
+        const link = e.target?.closest?.('a[href^="#/product/"]');
+        if (!link) return;
+        const href = link.getAttribute("href") || "";
+        const id = href.split("/").pop();
+        const product = productsById?.[id];
+        if (!product?.category) return;
+        try {
+          localStorage.setItem("lastViewedCategory", String(product.category));
+        } catch {
+          // ignore
+        }
+      },
+      { passive: true }
+    );
+  }
+
   async function loadProducts() {
     filterBtn.disabled = true;
     filterBtn.innerHTML = '<span class="spinner"></span>';
@@ -139,6 +398,15 @@ export async function shopPage(app) {
       }
       const productsById = Object.fromEntries(data.products.map((product) => [product.id, product]));
       productsEl.innerHTML = data.products.map(productCard).join("");
+      renderShowcase(data.products);
+      renderSmartRecommendations(data.products);
+      generateOutfitBtn?.addEventListener("click", () => renderOutfit(generateOutfit(data.products)));
+      // initial outfit suggestion
+      renderOutfit(generateOutfit(data.products));
+      if (!window.__vastraBehaviorBound) {
+        bindBehaviorTracking(productsById);
+        window.__vastraBehaviorBound = true;
+      }
       renderRecommendations(data.products);
       app.querySelectorAll("[data-wish]").forEach((wish) => {
         const product = productsById[wish.dataset.wish];

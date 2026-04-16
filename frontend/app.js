@@ -136,6 +136,19 @@ window.addEventListener(
   { once: true }
 );
 
+// Temporary failsafe: remove any legacy "live" blocks if present.
+window.addEventListener(
+  "load",
+  () => {
+    try {
+      document.querySelectorAll(".live, #live, .live-section, .live-products").forEach((el) => el.remove());
+    } catch {
+      // ignore
+    }
+  },
+  { once: true }
+);
+
 // Ensure navbar + protected routes update after Firebase restores session.
 (async function bindAuthRerender() {
   try {

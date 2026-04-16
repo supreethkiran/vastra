@@ -48,13 +48,19 @@ async function getServerPricedCart(uid) {
       invalidCount += 1;
       continue;
     }
+    const stock = Number.isFinite(Number(product.stock)) ? Number(product.stock) : null;
+    if (stock !== null && stock < qty) {
+      invalidCount += 1;
+      continue;
+    }
     pricedItems.push({
       id: cartItem.id || docSnap.id,
       productId: product.id,
       name: product.name || cartItem.name || "Product",
       image: product.image || cartItem.image || "",
       qty,
-      price: unitPrice
+      price: unitPrice,
+      stock: stock === null ? undefined : stock
     });
   }
   const total = pricedItems.reduce((sum, item) => sum + item.price * item.qty, 0);
@@ -198,6 +204,23 @@ router.post("/finalize-order", requireFirebaseAuth, async (req, res, next) => {
           { merge: true }
         );
         return;
+      }
+
+      // Inventory enforcement: verify + decrement stock atomically.
+      for (const item of items) {
+        const productRef = db.collection("products").doc(String(item.productId));
+        const productSnap = await tx.get(productRef);
+        if (!productSnap.exists) {
+          throw Object.assign(new Error("Some items are no longer available."), { status: 409 });
+        }
+        const productData = productSnap.data() || {};
+        const currentStock = Number.isFinite(Number(productData.stock)) ? Number(productData.stock) : null;
+        if (currentStock !== null) {
+          if (currentStock <= 0 || currentStock < Number(item.qty || 1)) {
+            throw Object.assign(new Error("Out of stock. Please refresh cart and try again."), { status: 409 });
+          }
+          tx.update(productRef, { stock: FieldValue.increment(-Number(item.qty || 1)) });
+        }
       }
 
       const orderPayload = {

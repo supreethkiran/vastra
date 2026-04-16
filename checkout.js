@@ -1,7 +1,7 @@
 /* Checkout page behavior */
 (function initCheckout(global) {
   const form = document.getElementById("checkoutForm");
-  if (!form || !global.VastraCart) return;
+  if (!form) return;
 
   const cartList = document.getElementById("checkoutItems");
   const subtotalEl = document.getElementById("checkoutSubtotal");
@@ -10,37 +10,75 @@
   const errorBox = document.getElementById("checkoutError");
   const loader = document.getElementById("checkoutLoader");
 
-  function renderSummary() {
-    const cart = global.VastraCart.getCart();
-    if (!cart.length) {
+  let cartItems = [];
+
+  function formatSafePrice(value) {
+    return "₹" + Number(value || 0).toLocaleString("en-IN");
+  }
+
+  function updateTotal(items) {
+    const sub = (items || []).reduce((sum, item) => sum + Number(item.price || 0) * Number(item.qty || 0), 0);
+    subtotalEl.textContent = formatSafePrice(sub);
+    totalEl.textContent = formatSafePrice(sub);
+  }
+
+  function renderCheckout(items) {
+    const list = Array.isArray(items) ? items : [];
+    if (!list.length) {
       cartList.innerHTML = '<p class="muted">Your cart is empty. Please add items first.</p>';
       payBtn.disabled = true;
+      updateTotal([]);
       return;
     }
-    if (!global.firebaseApi?.getCurrentUser?.()) {
-      payBtn.disabled = true;
-      cartList.innerHTML = '<p class="muted">Please sign in to continue checkout.</p>';
-      return;
-    }
-
-    cartList.innerHTML = cart
+    cartList.innerHTML = list
       .map(
         (item) => `
         <div class="summary-item">
           <img src="${item.image}" alt="${item.name}">
           <div>
             <p>${item.name}</p>
-            <small>Qty ${item.qty}</small>
+            <small>₹${Number(item.price || 0).toLocaleString("en-IN")} × ${Number(item.qty || 0)}</small>
           </div>
-          <strong>${global.VastraCart.formatPrice(item.price * item.qty)}</strong>
+          <strong>${formatSafePrice(Number(item.price || 0) * Number(item.qty || 0))}</strong>
         </div>
       `
       )
       .join("");
+    payBtn.disabled = false;
+    updateTotal(list);
+  }
 
-    const subtotal = global.VastraCart.getSubtotal();
-    subtotalEl.textContent = global.VastraCart.formatPrice(subtotal);
-    totalEl.textContent = global.VastraCart.formatPrice(subtotal);
+  function waitForAuth() {
+    return new Promise((resolve) => {
+      const unsub = global.firebaseApi.subscribeAuth((user) => {
+        if (user) {
+          try {
+            unsub();
+          } catch {
+            // ignore
+          }
+          resolve(user);
+        }
+      });
+    });
+  }
+
+  async function initCheckoutFromFirebase() {
+    if (!global.firebaseApi?.subscribeAuth || !global.firebaseApi?.subscribeCart) {
+      cartList.innerHTML = '<p class="muted">Checkout unavailable. Please refresh.</p>';
+      payBtn.disabled = true;
+      return;
+    }
+    const user = await waitForAuth();
+    console.log("Checkout user:", user);
+    console.log("Current user:", global.firebaseApi.getCurrentUser?.() || null);
+
+    global.firebaseApi.subscribeCart((items) => {
+      console.log("Checkout cart items:", items);
+      cartItems = Array.isArray(items) ? items : [];
+      console.log("Cart items at checkout:", cartItems);
+      renderCheckout(cartItems);
+    });
   }
 
   function validate(data) {
@@ -75,7 +113,7 @@
     event.preventDefault();
     errorBox.textContent = "";
 
-    const cart = global.VastraCart.getCart();
+    const cart = Array.isArray(cartItems) ? cartItems : [];
     if (!cart.length) {
       errorBox.textContent = "Cart is empty.";
       return;
@@ -147,7 +185,9 @@
         orderId,
         path: window.location.pathname || ""
       });
-      global.VastraCart.clearCart();
+      // Cart is cleared server-side after finalize; also clear client copy.
+      cartItems = [];
+      renderCheckout([]);
       window.location.href = "./success.html?orderId=" + encodeURIComponent(orderId);
     } catch (error) {
       console.error("[VASTRA][checkout] failed", error);
@@ -157,7 +197,10 @@
     }
   });
 
-  renderSummary();
-  global.firebaseApi?.subscribeAuth?.(renderSummary);
-  global.VastraCart?.subscribe?.(renderSummary);
+  payBtn.disabled = true;
+  cartList.innerHTML = '<p class="muted">Loading your cart…</p>';
+  initCheckoutFromFirebase().catch((e) => {
+    console.error("[VASTRA][checkout] init failed", e);
+    cartList.innerHTML = '<p class="muted">Unable to load cart. Please refresh.</p>';
+  });
 })(window);

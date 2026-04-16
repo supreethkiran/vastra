@@ -24,7 +24,7 @@ export async function productPage(app, id) {
     const { products: sameCategory } = await fetchProducts({ category: product.category }).catch(() => ({ products: [] }));
     const recs = sameCategory.filter((item) => item.id !== product.id).slice(0, 4);
     addRecentlyViewed(product);
-    const stock = Number(product.stock || 12);
+    const stock = Number.isFinite(Number(product.stock)) ? Number(product.stock) : 12;
     const rating = Number(product.rating || 4.6).toFixed(1);
     const sizes = Array.isArray(product.sizes) && product.sizes.length ? product.sizes : ["S", "M", "L", "XL"];
     const defaultSize = sizes.includes("M") ? "M" : sizes[0];
@@ -50,7 +50,7 @@ export async function productPage(app, id) {
               <button id="wishBtn" class="wishlist-btn ${isWishlisted(product.id) ? "active" : ""}" aria-label="Wishlist">♡</button>
             </div>
             <p class="muted">${product.category}</p>
-            <p class="muted">⭐ ${rating} · ${stock < 8 ? `${stock} in stock` : "In stock"}</p>
+            <p class="muted">⭐ ${rating} · ${stock <= 0 ? "Sold out" : stock < 8 ? `${stock} in stock` : "In stock"}</p>
             <p class="price">₹${Number(product.price).toLocaleString("en-IN")}</p>
             <div class="card stack" style="padding:12px;">
               <div class="row">
@@ -62,7 +62,7 @@ export async function productPage(app, id) {
               </div>
               <p id="sizeHint" class="muted" style="font-size:12px;">Tip: sizes sell out fast—lock it in before checkout.</p>
             </div>
-            <button id="addOneBtn" class="btn primary">Add to Cart</button>
+            <button id="addOneBtn" class="btn primary" ${stock <= 0 ? "disabled" : ""}>${stock <= 0 ? "Sold out" : "Add to Cart"}</button>
             <div class="trust-grid">
               <div class="trust-chip">100% Original</div>
               <div class="trust-chip">Secure Payment</div>
@@ -89,30 +89,29 @@ export async function productPage(app, id) {
           </div>
         </div>
       </section>
-      ${
-        recs.length
-          ? `
       <section class="stack" style="margin-top:16px;">
-        <h2 class="section-title" style="font-size:20px;">You May Also Like</h2>
+        <h2 class="section-title" style="font-size:20px;">Complete the Look</h2>
         <div class="grid compact">
-          ${recs
-            .map(
-              (item) => `
-              <article class="card rec-card">
-                <img src="${item.image}" alt="${item.name}" loading="lazy">
-                <div class="card-body stack">
-                  <p>${item.name}</p>
-                  <p class="price">₹${Number(item.price).toLocaleString("en-IN")}</p>
-                  <a href="#/product/${item.id}" class="btn">View</a>
-                </div>
-              </article>
-            `
-            )
-            .join("")}
+          ${
+            (await fetchProducts({}).catch(() => ({ products: [] }))).products
+              .filter((p) => p.id !== product.id && String(p.category || "") !== String(product.category || ""))
+              .slice(0, 4)
+              .map(
+                (item) => `
+                <article class="card rec-card">
+                  <img src="${item.image}" alt="${item.name}" loading="lazy">
+                  <div class="card-body stack">
+                    <p>${item.name}</p>
+                    <p class="price">₹${Number(item.price).toLocaleString("en-IN")}</p>
+                    <a href="#/product/${item.id}" class="btn">View</a>
+                  </div>
+                </article>
+              `
+              )
+              .join("") || `<div class="card empty-state" style="grid-column:1/-1;"><p class="muted">No matching items yet.</p></div>`
+          }
         </div>
-      </section>`
-          : ""
-      }
+      </section>
     `;
 
     const mainImage = document.getElementById("mainGalleryImage");
