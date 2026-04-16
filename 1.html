@@ -1453,7 +1453,7 @@
       <button class="nav-icon-btn" aria-label="Search">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
       </button>
-      <button class="nav-icon-btn" aria-label="Account" id="profile-icon">
+      <button class="nav-icon-btn" aria-label="Account" id="profile-icon" type="button">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       </button>
       <button class="nav-icon-btn" aria-label="Cart" id="openCartBtn" style="position:relative;">
@@ -2570,15 +2570,17 @@ document.addEventListener("DOMContentLoaded", () => {
   const profileIcon = document.getElementById("profile-icon");
   if (!profileIcon) return;
   
-  profileIcon.addEventListener("click", async () => {
+  profileIcon.addEventListener("click", async (e) => {
+    e.preventDefault(); // IMPORTANT: prevent default button/link action
+    console.log("Profile clicked");
     try {
       if (window.firebaseReady) await window.firebaseReady;
       const user = window.firebaseApi?.getCurrentUser?.() || null;
       if (!user) {
-        document.getElementById("loginModal")?.classList.add("open");
-        return;
+        window.location.href = "/#/login";
+      } else {
+        window.location.href = "/profile.html";
       }
-      window.location.href = "./profile.html";
     } catch (e) {
       console.error("Profile navigation failed", e);
       showToast("Unable to open profile");
