@@ -435,6 +435,35 @@ function subscribeAuth(callback) {
   return () => authListeners.delete(callback);
 }
 
+function waitForAuth(options = {}) {
+  const requireUser = Boolean(options.requireUser);
+  const timeoutMs = Number.isFinite(Number(options.timeoutMs)) ? Number(options.timeoutMs) : 8000;
+  return new Promise((resolve) => {
+    let settled = false;
+    const unsubscribe = subscribeAuth((user) => {
+      if (settled) return;
+      if (requireUser && !user) return;
+      settled = true;
+      try {
+        unsubscribe();
+      } catch {
+        // ignore
+      }
+      resolve(user || null);
+    });
+    setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      try {
+        unsubscribe();
+      } catch {
+        // ignore
+      }
+      resolve(authUser || null);
+    }, timeoutMs);
+  });
+}
+
 async function signUpWithEmail(email, password) {
   await ensureFirebaseReady();
   const authInstance = ensureAuthInitialized();
@@ -491,6 +520,7 @@ window.firebaseApi = {
   createProduct,
   getCurrentUser,
   subscribeAuth,
+  waitForAuth,
   signUpWithEmail,
   signInWithEmail,
   signOutUser,

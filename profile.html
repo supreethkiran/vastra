@@ -224,32 +224,12 @@
       }
     });
 
-    async function waitForAuthUser(){
-      // Prefer the auth subscription to avoid timing races during session restore.
-      if (window.firebaseApi?.subscribeAuth) {
-        return await new Promise((resolve) => {
-          let settled = false;
-          window.firebaseApi.subscribeAuth((u) => {
-            if (settled) return;
-            settled = true;
-            resolve(u || null);
-          });
-          // Safety: if callback never fires, fall back to current user after a tick.
-          setTimeout(() => {
-            if (settled) return;
-            settled = true;
-            resolve(window.firebaseApi?.getCurrentUser?.() || null);
-          }, 1200);
-        });
-      }
-      return window.firebaseApi?.getCurrentUser?.() || null;
-    }
-
     (async function init(){
       try{
         statusLine.textContent = "Loading your account…";
         await window.firebaseReady;
-        const user = await waitForAuthUser();
+        const user = await window.firebaseApi?.waitForAuth?.({ requireUser: false, timeoutMs: 12000 });
+        console.log("User:", window.firebaseApi?.getCurrentUser?.() || null);
         if (!user) return redirectToLogin();
         renderUser(user);
         await loadOrders();

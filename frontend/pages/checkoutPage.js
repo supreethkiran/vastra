@@ -51,65 +51,89 @@ function payWithRazorpay({ amountPaise, customer, keyId, orderId, currency = "IN
 }
 
 export function checkoutPage(app) {
-  const cart = getLocalCart();
-  if (!cart.length) {
-    app.innerHTML = `
-      <div class="card empty-state fade-in">
-        <p class="muted">Cart is empty.</p>
-        <a href="#/" class="btn" style="display:inline-block;margin-top:8px;">Continue Shopping</a>
-      </div>
-    `;
-    return;
-  }
-  const baseTotal = calcTotal(cart);
-
+  // Initial render (avoid auth/cart timing races)
   app.innerHTML = `
     <h1 class="section-title">Checkout</h1>
-    <div class="form-grid fade-in">
-      <form id="checkoutForm" class="card stack" style="padding:16px;">
-        <input name="name" placeholder="Full Name" required>
-        <input name="email" type="email" placeholder="Email" required>
-        <input name="phone" placeholder="Phone" required>
-        <textarea name="address" placeholder="Address" required></textarea>
-        <input name="cityPincode" placeholder="City / Pincode" required>
-        <div class="row">
-          <input id="couponInput" name="coupon" placeholder="Coupon code (e.g. VASTRA10)">
-          <button id="applyCouponBtn" class="btn" type="button">Apply</button>
-        </div>
-        <p id="couponMessage" class="muted"></p>
-        <p id="checkoutError" class="inline-error"></p>
-        <button id="payBtn" class="btn primary" type="submit">Pay Now</button>
-      </form>
-      <aside class="card stack" style="padding:16px;">
-        <h3>Order Summary</h3>
-        ${cart.map((item) => `<div class="row"><span>${item.name} x ${item.qty}</span><strong>₹${(item.price * item.qty).toLocaleString("en-IN")}</strong></div>`).join("")}
-        <div class="row"><strong>Subtotal</strong><strong id="subtotalAmount">₹${baseTotal.toLocaleString("en-IN")}</strong></div>
-        <div class="row"><strong>Discount</strong><strong id="discountAmount">₹0</strong></div>
-        <div class="row"><strong>Total</strong><strong class="price" id="finalAmount">₹${baseTotal.toLocaleString("en-IN")}</strong></div>
-        <div class="trust-grid">
-          <div class="trust-chip">Secure Payment</div>
-          <div class="trust-chip">100% Original</div>
-          <div class="trust-chip">Easy Returns</div>
-        </div>
-      </aside>
+    <div class="card fade-in" style="padding:16px;">
+      <p class="muted">Loading your cart…</p>
     </div>
   `;
 
+  let cartItems = getLocalCart();
+  let baseTotal = calcTotal(cartItems);
   let finalTotal = baseTotal;
   let appliedCoupon = "";
-  const couponInput = document.getElementById("couponInput");
-  const couponMessage = document.getElementById("couponMessage");
-  document.getElementById("applyCouponBtn").addEventListener("click", () => {
-    const result = applyCoupon(baseTotal, couponInput.value);
-    finalTotal = result.total;
-    appliedCoupon = couponInput.value.trim();
-    document.getElementById("discountAmount").textContent = `₹${result.discount.toLocaleString("en-IN")}`;
-    document.getElementById("finalAmount").textContent = `₹${finalTotal.toLocaleString("en-IN")}`;
-    couponMessage.textContent = result.message || "Coupon removed";
-    couponMessage.className = result.discount > 0 ? "ok" : "muted";
-  });
+  let remoteUnsub = null;
 
-  document.getElementById("checkoutForm").addEventListener("submit", async (event) => {
+  function renderCheckout(items) {
+    cartItems = Array.isArray(items) ? items : [];
+    baseTotal = calcTotal(cartItems);
+    finalTotal = baseTotal;
+    appliedCoupon = "";
+
+    if (!cartItems.length) {
+      app.innerHTML = `
+        <div class="card empty-state fade-in">
+          <p class="muted">Your cart is empty.</p>
+          <a href="#/" class="btn" style="display:inline-block;margin-top:8px;">Continue Shopping</a>
+        </div>
+      `;
+      return;
+    }
+
+    app.innerHTML = `
+      <h1 class="section-title">Checkout</h1>
+      <div class="form-grid fade-in">
+        <form id="checkoutForm" class="card stack" style="padding:16px;">
+          <input name="name" placeholder="Full Name" required>
+          <input name="email" type="email" placeholder="Email" required>
+          <input name="phone" placeholder="Phone" required>
+          <textarea name="address" placeholder="Address" required></textarea>
+          <input name="cityPincode" placeholder="City / Pincode" required>
+          <div class="row">
+            <input id="couponInput" name="coupon" placeholder="Coupon code (e.g. VASTRA10)">
+            <button id="applyCouponBtn" class="btn" type="button">Apply</button>
+          </div>
+          <p id="couponMessage" class="muted"></p>
+          <p id="checkoutError" class="inline-error"></p>
+          <button id="payBtn" class="btn primary" type="submit">Pay Now</button>
+        </form>
+        <aside class="card stack" style="padding:16px;">
+          <h3>Order Summary</h3>
+          <div id="checkoutItems">
+            ${cartItems
+              .map(
+                (item) =>
+                  `<div class="row"><span>${item.name} x ${item.qty}</span><strong>₹${(item.price * item.qty).toLocaleString("en-IN")}</strong></div>`
+              )
+              .join("")}
+          </div>
+          <div class="row"><strong>Subtotal</strong><strong id="subtotalAmount">₹${baseTotal.toLocaleString("en-IN")}</strong></div>
+          <div class="row"><strong>Discount</strong><strong id="discountAmount">₹0</strong></div>
+          <div class="row"><strong>Total</strong><strong class="price" id="finalAmount">₹${baseTotal.toLocaleString("en-IN")}</strong></div>
+          <div class="trust-grid">
+            <div class="trust-chip">Secure Payment</div>
+            <div class="trust-chip">100% Original</div>
+            <div class="trust-chip">Easy Returns</div>
+          </div>
+        </aside>
+      </div>
+    `;
+
+    // Coupon (UI-only; backend remains source of truth)
+    const couponInput = document.getElementById("couponInput");
+    const couponMessage = document.getElementById("couponMessage");
+    document.getElementById("applyCouponBtn").addEventListener("click", () => {
+      const result = applyCoupon(baseTotal, couponInput.value);
+      finalTotal = result.total;
+      appliedCoupon = couponInput.value.trim();
+      document.getElementById("discountAmount").textContent = `₹${result.discount.toLocaleString("en-IN")}`;
+      document.getElementById("finalAmount").textContent = `₹${finalTotal.toLocaleString("en-IN")}`;
+      couponMessage.textContent = result.message || "Coupon removed";
+      couponMessage.className = result.discount > 0 ? "ok" : "muted";
+    });
+
+    document.getElementById("checkoutForm").addEventListener("submit", async (event) => {
     event.preventDefault();
     const formData = new FormData(event.target);
     const details = Object.fromEntries(formData.entries());
@@ -147,6 +171,7 @@ export function checkoutPage(app) {
     `;
     document.body.appendChild(overlay);
     try {
+      console.log("User:", window.firebaseApi?.getCurrentUser?.() || null);
       if (!window.firebaseApi?.createPaymentOrder) {
         throw new Error("Checkout service unavailable. Please refresh.");
       }
@@ -203,5 +228,25 @@ export function checkoutPage(app) {
       payBtn.textContent = "Pay Now";
       overlay.remove();
     }
-  });
+    });
+  }
+
+  // Render quickly with local cart, then bind to live Firestore cart after auth.
+  renderCheckout(cartItems);
+
+  (async function initCheckout() {
+    try {
+      await window.firebaseReady;
+      const user = await window.firebaseApi?.waitForAuth?.({ requireUser: true, timeoutMs: 12000 });
+      console.log("Checkout user:", user);
+      if (!user) return;
+      remoteUnsub?.();
+      remoteUnsub = window.firebaseApi.subscribeCart((items) => {
+        console.log("Checkout items:", items);
+        renderCheckout(items);
+      });
+    } catch (e) {
+      console.error("[VASTRA][checkout] init failed", e);
+    }
+  })();
 }
