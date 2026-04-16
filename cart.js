@@ -7,6 +7,51 @@
   };
   const listeners = new Set();
 
+  async function waitForFirebaseApi(timeoutMs = 12000) {
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      if (global.firebaseReady) {
+        try {
+          await global.firebaseReady;
+        } catch {
+          // ignore
+        }
+      }
+      if (global.firebaseApi?.subscribeAuth && global.firebaseApi?.subscribeCart && global.firebaseApi?.upsertCartItem) {
+        return global.firebaseApi;
+      }
+      await new Promise((r) => setTimeout(r, 60));
+    }
+    return global.firebaseApi || null;
+  }
+
+  async function waitForAuth(timeoutMs = 12000) {
+    const api = await waitForFirebaseApi(timeoutMs);
+    if (!api?.waitForAuth) {
+      // Fallback to subscribeAuth
+      return await new Promise((resolve) => {
+        let settled = false;
+        const unsub = api?.subscribeAuth?.((u) => {
+          if (settled) return;
+          if (!u) return;
+          settled = true;
+          try {
+            unsub?.();
+          } catch {
+            // ignore
+          }
+          resolve(u);
+        });
+        setTimeout(() => {
+          if (settled) return;
+          settled = true;
+          resolve(api?.getCurrentUser?.() || null);
+        }, timeoutMs);
+      });
+    }
+    return await api.waitForAuth({ requireUser: true, timeoutMs });
+  }
+
   function formatPrice(value) {
     return "₹" + Number(value || 0).toLocaleString("en-IN");
   }
@@ -75,10 +120,14 @@
       });
     }
 
-    // FIX: ensure cart only binds after auth is ready
-    if (global.firebaseApi?.subscribeAuth) {
-      global.firebaseApi.subscribeAuth((user) => {
-        console.log("User:", global.firebaseApi?.getCurrentUser?.() || null);
+    (async () => {
+      const api = await waitForFirebaseApi(12000);
+      if (!api?.subscribeAuth) {
+        console.error("[VASTRA][cart] firebaseApi not ready for cart subscription");
+        return;
+      }
+      api.subscribeAuth((user) => {
+        console.log("User:", api?.getCurrentUser?.() || null);
         if (!user) {
           stopCart();
           setCart([]);
@@ -87,17 +136,7 @@
         console.log("[VASTRA][cart] binding Firestore cart…");
         startCart();
       });
-      return;
-    }
-
-    // Fallback if subscribeAuth isn't available for some reason.
-    window.addEventListener(
-      "load",
-      () => {
-        startCart();
-      },
-      { once: true }
-    );
+    })();
   }
 
   function getCart() {
@@ -113,9 +152,11 @@
     return state.cart.reduce((total, item) => total + Number(item.qty || 0), 0);
   }
 
-  function addToCart(product, quantity) {
-    if (!global.firebaseApi?.getCurrentUser?.()) {
+  async function addToCart(product, quantity) {
+    const user = await waitForAuth(12000);
+    if (!user) {
       showToast("Please sign in to use cart");
+      window.location.href = "/#/login";
       return cloneCart();
     }
     const qty = Math.max(1, Number(quantity || 1));
@@ -144,13 +185,8 @@
         image: String(product.image || "")
       };
       console.log("Product before cart:", payload);
-      ensureFirebaseApi()
-        .upsertCartItem(payload, qty)
-        .then(() => console.log("Cart write success"))
-        .catch((error) => {
-          console.error("Cart write failed:", error);
-          reportAsyncCartError(error, "Could not sync cart item.");
-        });
+      await ensureFirebaseApi().upsertCartItem(payload, qty);
+      console.log("Cart write success");
       ensureFirebaseApi().trackEvent?.("add_to_cart", {
         productId: String(product.productId || product.id || ""),
         cartItemId: String(product.id || ""),

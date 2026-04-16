@@ -2078,9 +2078,9 @@ window.VastraCart?.subscribe?.(() => {
   renderCart();
 });
 
-function addToCart(item) {
+async function addToCart(item) {
   if (window.VastraCart?.addToCart) {
-    window.VastraCart.addToCart(item, 1);
+    await window.VastraCart.addToCart(item, 1);
     updateBadge(); renderCart(); showToast('Added to Cart');
     return;
   }
@@ -2200,7 +2200,7 @@ function showToast(msg) {
   toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
 }
 
-function handleAddToCartButton(btn) {
+async function handleAddToCartButton(btn) {
   if (!btn) return;
   const rawId = String(btn.dataset.id || "").trim();
   const product = {
@@ -2211,7 +2211,7 @@ function handleAddToCartButton(btn) {
   };
   if (!product.id || !product.name || !Number.isFinite(product.price) || product.price <= 0 || !product.image) return;
 
-  addToCart(product);
+  await addToCart(product);
   const originalText = btn.dataset.originalText || btn.textContent.trim();
   btn.dataset.originalText = originalText;
   btn.disabled = true;
