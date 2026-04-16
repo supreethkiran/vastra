@@ -86,6 +86,39 @@
     }
     .gallery-item:hover img { transform: scale(1.05); }
     .product-viewer { position: relative; width: 100%; height: 100%; background: var(--surface2); }
+    .viewer-badge {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      z-index: 4;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      font-size: 9px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(10,10,12,0.55);
+      backdrop-filter: blur(12px);
+    }
+    .viewer-hint {
+      position: absolute;
+      bottom: 14px;
+      left: 14px;
+      z-index: 4;
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(240,236,228,0.7);
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(10,10,12,0.45);
+      padding: 8px 12px;
+      backdrop-filter: blur(12px);
+      transition: opacity 0.25s var(--ease), transform 0.25s var(--ease);
+    }
+    .viewer-hint.hide { opacity: 0; transform: translateY(6px); pointer-events: none; }
     .viewer-loading {
       position: absolute; inset: 0; z-index: 3;
       display: flex; align-items: center; justify-content: center;
@@ -99,6 +132,8 @@
       animation: spin 0.9s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes ripple { from { opacity: .9; transform: translate(-50%, -50%) scale(1); } to { opacity: 0; transform: translate(-50%, -50%) scale(22); } }
+    @keyframes pulse { 0% { transform: scale(1); } 45% { transform: scale(1.03); } 100% { transform: scale(1); } }
     .viewer-fallback {
       position: absolute; inset: 0; z-index: 1;
       width: 100%; height: 100%; object-fit: cover;
@@ -139,6 +174,34 @@
       font-size: 30px; color: var(--gold); margin-bottom: 20px;
       font-weight: 300; letter-spacing: 0.02em;
     }
+    .trust-row { display: flex; flex-wrap: wrap; gap: 10px; margin: 12px 0 18px; }
+    .trust-chip {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.02);
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: rgba(240,236,228,0.72);
+    }
+    .trust-chip strong { color: var(--text); letter-spacing: 0.08em; }
+    .urgency {
+      margin: 8px 0 14px;
+      padding: 12px;
+      border: 1px solid rgba(201,169,110,0.22);
+      background: linear-gradient(180deg, rgba(201,169,110,0.10), rgba(255,255,255,0.01));
+      color: rgba(240,236,228,0.8);
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .urgency strong { color: var(--gold2); }
+    .social-proof { font-size: 11px; color: rgba(240,236,228,0.6); margin-bottom: 16px; }
     .desc { color: var(--muted); margin-bottom: 24px; font-size: 13px; line-height: 1.85; font-weight: 300; }
     .meta {
       border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
@@ -179,6 +242,16 @@
       font-family: 'DM Sans', sans-serif;
       font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 800;
       transition: background 0.3s; position: relative; overflow: hidden;
+    }
+    .btn-primary { transform: translateZ(0); }
+    .btn-primary.pulse { animation: pulse 520ms var(--ease); }
+    .btn-primary .ripple {
+      position:absolute;width:10px;height:10px;border-radius:999px;
+      background: rgba(0,0,0,0.18);
+      transform: translate(-50%,-50%) scale(1);
+      pointer-events:none;
+      opacity:0;
+      animation: ripple .55s var(--ease);
     }
     .btn-primary::before { content:''; position:absolute;inset:0;background:rgba(0,0,0,0.15);transform:translateX(-101%);transition:transform 0.4s var(--ease); }
     .btn-primary:hover::before { transform:translateX(0); }
@@ -244,6 +317,24 @@
     .mini-btn:hover { border-color: var(--gold); color: var(--gold); transform: translateY(-1px); }
     .mini-btn.primary { background: var(--gold); color: #060608; border-color: var(--gold); font-weight: 800; }
     .mini-btn.primary:hover { color: #060608; }
+    .bundle-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 14px;
+      border: 1px solid rgba(201,169,110,0.22);
+      background: linear-gradient(135deg, rgba(201,169,110,0.10), rgba(255,255,255,0.01));
+      margin: 14px 0 12px;
+    }
+    .bundle-title { font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: rgba(240,236,228,0.7); }
+    .bundle-price { font-size: 18px; color: var(--gold2); font-weight: 700; letter-spacing: 0.02em; }
+    .bundle-save { font-size: 11px; color: rgba(240,236,228,0.7); }
+    .bundle-save strong { color: var(--gold); }
+    .bundle-cta { display:inline-flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid var(--gold);background:var(--gold);color:#060608;font-weight:900;letter-spacing:.18em;text-transform:uppercase;font-size:10px;cursor:pointer;transition:transform .18s var(--ease); }
+    .bundle-cta:active { transform: scale(0.98); }
+    .bundle-cta:disabled { opacity: 0.7; cursor: not-allowed; }
 
     /* SEC HEADER */
     .sec-label {
@@ -271,6 +362,8 @@
       .gallery-item:first-child { grid-column: span 1; }
       .gallery-item:first-child { aspect-ratio: 4/5; }
       .gallery-item.gallery-3d { grid-column: span 1; height: 300px; }
+      .bundle-bar { padding: 12px; }
+      .bundle-cta { width: 100%; justify-content: center; }
     }
   </style>
 </head>
@@ -290,6 +383,8 @@
       <div class="gallery" id="gallery">
         <div class="gallery-item">
           <div class="product-viewer" id="productViewer">
+            <div class="viewer-badge">360° View</div>
+            <div class="viewer-hint" id="viewerHint">Drag to rotate • Scroll to zoom</div>
             <div class="viewer-loading" id="viewerLoading"><div class="viewer-spinner"></div></div>
             <img id="mainImg" class="viewer-fallback" src="https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=1200&h=750&fit=crop&q=80" alt="">
             <model-viewer
@@ -326,7 +421,17 @@
       <div class="panel">
         <p class="cat">Hoodies</p>
         <h1 class="name" id="productName">Noir Oversized<br>Hoodie</h1>
+        <div class="trust-row">
+          <div class="trust-chip">⭐ <strong>4.8</strong> Rating</div>
+          <div class="trust-chip">🔥 <strong id="soldThisWeek">120+</strong> Sold this week</div>
+          <div class="trust-chip">✓ <strong>Premium</strong> Quality Guaranteed</div>
+        </div>
         <div class="price" id="productPrice">₹2,499</div>
+        <div class="urgency" id="urgencyBar">
+          <span><strong id="stockLeft">Only 5 left</strong> in stock</span>
+          <span>Selling fast 🔥</span>
+        </div>
+        <div class="social-proof" id="socialProof">Someone from Bangalore just bought this</div>
         <p class="desc" id="productDesc">
           Heavyweight 480GSM fleece with a garment-washed finish for that perfectly broken-in feel. Dropped shoulders, ribbed cuffs, kangaroo pocket. Made to outlast every season.
         </p>
@@ -492,7 +597,18 @@ function showToast(msg){
   t.textContent=msg;t.style.opacity='1';t.style.transform='translateX(-50%) translateY(0)';
   setTimeout(()=>{t.style.opacity='0';t.style.transform='translateX(-50%) translateY(20px)';},2800);
 }
-document.getElementById('addBtn').addEventListener('click',()=>{
+
+function addRippleToButton(btn, clientX, clientY) {
+  if (!btn) return;
+  const r = btn.getBoundingClientRect();
+  const ripple = document.createElement('span');
+  ripple.className = 'ripple';
+  ripple.style.left = `${clientX - r.left}px`;
+  ripple.style.top = `${clientY - r.top}px`;
+  btn.appendChild(ripple);
+  setTimeout(() => ripple.remove(), 650);
+}
+document.getElementById('addBtn').addEventListener('click',(e)=>{
   const cleanName=document.getElementById('productName').textContent.replace('\n',' ');
   const size=document.querySelector('.size-btn.active')?.textContent||'M';
   const numericPrice=Number((document.getElementById('productPrice').textContent || '').replace(/[^\d]/g,'')) || product.price;
@@ -503,8 +619,11 @@ document.getElementById('addBtn').addEventListener('click',()=>{
     price: numericPrice,
     image: product.img
   };
+  const btn = document.getElementById('addBtn');
+  btn.classList.remove('pulse'); void btn.offsetWidth; btn.classList.add('pulse');
+  addRippleToButton(btn, e.clientX, e.clientY);
   window.VastraCart.addToCart(item, qty);
-  showToast(`${cleanName} (${size}) × ${qty} added to cart`);
+  showToast(`Added to cart ✅`);
 });
 document.getElementById('goToCartBtn').addEventListener('click',()=>{
   window.location.href='./cart.html';
@@ -538,6 +657,27 @@ document.getElementById('thumbImg1').src=product.thumb1||product.img;
 document.getElementById('thumbImg2').src=product.thumb2||product.img;
 document.querySelector('.cat').textContent=product.cat;
 document.title=`VASTRA — ${product.name.replace('\n',' ')}`;
+
+// Trust + urgency + social proof (dynamic)
+(function initConversionSignals() {
+  const stock = Math.floor(3 + Math.random() * 8); // 3–10
+  const sold = 80 + Math.floor(Math.random() * 120); // 80–200
+  const stockEl = document.getElementById('stockLeft');
+  const soldEl = document.getElementById('soldThisWeek');
+  if (stockEl) stockEl.textContent = `Only ${stock} left`;
+  if (soldEl) soldEl.textContent = `${sold}+`;
+
+  const cities = ["Bangalore", "Mumbai", "Delhi", "Hyderabad", "Chennai", "Pune", "Kolkata", "Jaipur", "Goa"];
+  const proof = document.getElementById('socialProof');
+  if (proof) {
+    let idx = Math.floor(Math.random() * cities.length);
+    proof.textContent = `Someone from ${cities[idx]} just bought this`;
+    setInterval(() => {
+      idx = (idx + 1 + Math.floor(Math.random() * 2)) % cities.length;
+      proof.textContent = `Someone from ${cities[idx]} just bought this`;
+    }, 4200);
+  }
+})();
 window.firebaseApi?.trackEvent?.('product_view', {
   productId: String(product.id),
   name: product.name.replace('\n', ' '),
@@ -673,23 +813,82 @@ async function renderRecommendations(currentProduct) {
     }
 
     recs = recs.slice(0, 4);
+
+    const currentPrice =
+      Number((document.getElementById('productPrice')?.textContent || '').replace(/[^\d]/g, '')) ||
+      Number(currentProduct?.price || 0) ||
+      0;
+    const recTotal = recs.reduce((sum, p) => sum + Number(p.price || 0), 0);
+    const outfitTotal = currentPrice + recTotal;
+    const discountRate = recs.length >= 2 ? 0.10 : 0.06;
+    const save = Math.round(outfitTotal * discountRate);
+    const discounted = Math.max(0, outfitTotal - save);
+
     row.innerHTML = recs.length
-      ? recs.map((p) => `
-        <article class="related-card">
-          <div class="related-img">
-            <img src="${p.image}" alt="${p.name}" loading="lazy">
+      ? `
+        <div class="bundle-bar">
+          <div>
+            <div class="bundle-title">Full Outfit</div>
+            <div class="bundle-price">₹${discounted.toLocaleString('en-IN')}</div>
+            <div class="bundle-save">Save <strong>₹${save.toLocaleString('en-IN')}</strong> on bundle</div>
           </div>
-          <div class="related-info">
-            <div class="related-name">${p.name}</div>
-            <div class="related-price">₹${Number(p.price || 0).toLocaleString('en-IN')}</div>
-            <div class="rec-actions">
-              <a class="mini-btn" href="./2.html?id=${encodeURIComponent(p.id)}">View</a>
-              <button class="mini-btn primary" type="button" data-rec-add="${p.id}">Add to Cart</button>
+          <button id="buyFullOutfitBtn" class="bundle-cta" type="button">Buy Full Outfit 🔥</button>
+        </div>
+        ${recs.map((p) => `
+          <article class="related-card">
+            <div class="related-img">
+              <img src="${p.image}" alt="${p.name}" loading="lazy">
             </div>
-          </div>
-        </article>
-      `).join('')
+            <div class="related-info">
+              <div class="related-name">${p.name}</div>
+              <div class="related-price">₹${Number(p.price || 0).toLocaleString('en-IN')}</div>
+              <div class="rec-actions">
+                <a class="mini-btn" href="./2.html?id=${encodeURIComponent(p.id)}">View</a>
+                <button class="mini-btn primary" type="button" data-rec-add="${p.id}">Add to Cart</button>
+              </div>
+            </div>
+          </article>
+        `).join('')}
+      `
       : '<div class="empty" style="min-height:120px;display:flex;align-items:center;justify-content:center;">No suggestions available</div>';
+
+    document.getElementById('buyFullOutfitBtn')?.addEventListener('click', async (event) => {
+      const btn = event.currentTarget;
+      btn.disabled = true;
+      const old = btn.textContent;
+      btn.textContent = 'Adding…';
+      try {
+        if (window.firebaseReady) await window.firebaseReady;
+        if (!window.firebaseApi?.upsertCartItem) throw new Error('Cart unavailable');
+
+        const cleanName = document.getElementById('productName')?.textContent?.replace('\n',' ') || String(currentProduct?.name || 'Product');
+        const currentItem = {
+          id: `${currentProduct.id}-M`,
+          productId: String(currentProduct.id),
+          name: `${cleanName} (M)`,
+          price: Number(currentPrice || 0),
+          image: currentProduct.img || currentProduct.image || ''
+        };
+        await window.firebaseApi.upsertCartItem(currentItem, 1);
+        for (const p of recs) {
+          const item = {
+            id: `${p.id}-M`,
+            productId: String(p.id),
+            name: `${p.name} (M)`,
+            price: Number(p.price || 0),
+            image: p.image
+          };
+          await window.firebaseApi.upsertCartItem(item, 1);
+        }
+        showToast('Full outfit added ✅');
+      } catch (e) {
+        console.error('AUTH ERROR:', e);
+        showToast(e?.message || 'Unable to add outfit');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = old;
+      }
+    });
 
     row.querySelectorAll('[data-rec-add]').forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -697,8 +896,9 @@ async function renderRecommendations(currentProduct) {
         const p = recs.find((x) => String(x.id) === String(id));
         if (!p) return;
         const item = { id: `${p.id}-M`, productId: String(p.id), name: `${p.name} (M)`, price: Number(p.price || 0), image: p.image };
+        window.firebaseApi?.upsertCartItem?.(item, 1).catch(() => {});
         window.VastraCart?.addToCart?.(item, 1);
-        showToast(`${p.name} added to cart`);
+        showToast(`Added to cart ✅`);
         btn.disabled = true;
         const old = btn.textContent;
         btn.textContent = 'Added ✓';
@@ -726,16 +926,40 @@ function init3DViewer(productInput) {
     const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.setSize(container.clientWidth, 400);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     container.appendChild(renderer.domElement);
 
     const geometry = new THREE.BoxGeometry(1, 1, 1);
     const loader = new THREE.TextureLoader();
     loader.crossOrigin = "anonymous";
     const texture = loader.load(productInput.img || productInput.image || "", undefined, undefined, () => {});
-    const material = new THREE.MeshBasicMaterial({ map: texture });
+    const material = new THREE.MeshStandardMaterial({ map: texture, roughness: 0.65, metalness: 0.15 });
     const cube = new THREE.Mesh(geometry, material);
+    cube.castShadow = true;
     scene.add(cube);
     camera.position.z = 2;
+
+    // Lights + shadow plane
+    const ambient = new THREE.AmbientLight(0xffffff, 0.85);
+    scene.add(ambient);
+    const key = new THREE.DirectionalLight(0xffffff, 0.9);
+    key.position.set(2.2, 3.2, 3.2);
+    key.castShadow = true;
+    key.shadow.mapSize.width = 1024;
+    key.shadow.mapSize.height = 1024;
+    scene.add(key);
+    const rim = new THREE.DirectionalLight(0xc9a96e, 0.45);
+    rim.position.set(-2.6, 1.4, -1.4);
+    scene.add(rim);
+    const plane = new THREE.Mesh(
+      new THREE.PlaneGeometry(8, 8),
+      new THREE.ShadowMaterial({ opacity: 0.18 })
+    );
+    plane.rotation.x = -Math.PI / 2;
+    plane.position.y = -1.1;
+    plane.receiveShadow = true;
+    scene.add(plane);
 
     let isHovering = false;
     container.addEventListener("mouseenter", () => (isHovering = true));
@@ -755,6 +979,23 @@ function init3DViewer(productInput) {
       cube.rotation.y += delta * 0.01;
       prevX = e.clientX;
     });
+
+    // Zoom on scroll (clamped)
+    container.addEventListener(
+      "wheel",
+      (e) => {
+        e.preventDefault();
+        const delta = Math.sign(e.deltaY || 0);
+        camera.position.z = Math.max(1.3, Math.min(3.0, camera.position.z + delta * 0.12));
+      },
+      { passive: false }
+    );
+
+    // Hide hint after first interaction
+    const hint = document.getElementById("viewerHint");
+    const hideHint = () => hint?.classList.add("hide");
+    container.addEventListener("pointerdown", hideHint, { once: true });
+    container.addEventListener("wheel", hideHint, { once: true });
 
     function resize() {
       const w = container.clientWidth || 1;
