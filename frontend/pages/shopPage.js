@@ -426,7 +426,7 @@ export async function shopPage(app) {
           const oldLabel = btn.textContent;
           btn.textContent = "Adding...";
           try {
-            const user = window.firebaseApi?.getCurrentUser?.() || null;
+            const user = (await window.firebaseApi?.waitForAuth?.({ requireUser: true, timeoutMs: 12000 })) || null;
             if (!user) {
               alert("Please login first");
               window.location.href = "/#/login";

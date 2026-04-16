@@ -78,12 +78,13 @@
     // FIX: ensure cart only binds after auth is ready
     if (global.firebaseApi?.subscribeAuth) {
       global.firebaseApi.subscribeAuth((user) => {
-        console.log("Current user:", global.firebaseApi?.getCurrentUser?.() || null);
+        console.log("User:", global.firebaseApi?.getCurrentUser?.() || null);
         if (!user) {
           stopCart();
           setCart([]);
           return;
         }
+        console.log("[VASTRA][cart] binding Firestore cart…");
         startCart();
       });
       return;
