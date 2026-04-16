@@ -157,8 +157,12 @@ function toProduct(docSnap) {
 
 async function getProducts() {
   if (!db) throw new Error("Firestore not initialized");
+  console.log("Fetching products from Firestore...");
   const snapshot = await getDocs(collection(db, "products"));
-  return snapshot.docs.map(toProduct);
+  return snapshot.docs.map((docSnap) => ({
+    id: docSnap.id,
+    ...(docSnap.data() || {})
+  }));
 }
 
 function cartItemsRef() {

@@ -50,14 +50,57 @@ export function loginPage(app) {
 
 export function signupPage(app) {
   app.innerHTML = `
-    <h1 class="section-title">Create account</h1>
-    <form id="signupForm" class="card stack fade-in" style="padding:16px;max-width:520px;">
-      <input name="name" type="text" placeholder="Full name" required>
-      <input name="email" type="email" placeholder="Email" required>
-      <input name="password" type="password" placeholder="Password" required>
-      <p id="signupError" class="inline-error"></p>
-      <button id="signupBtn" class="btn primary" type="submit">Signup</button>
-    </form>
+    <section class="auth-split auth-enter">
+      <aside class="auth-hero" aria-hidden="true">
+        <div class="auth-hero-overlay">
+          <div class="auth-hero-inner">
+            <div class="auth-logo">VASTRA</div>
+            <div class="auth-hero-copy">
+              <div class="auth-eyebrow">Join the Culture</div>
+              <h1 class="auth-title">Elevate your style with Vastra</h1>
+              <p class="auth-subtitle">Premium fits. Zero noise. Built for the new generation of everyday luxury.</p>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <div class="auth-panel">
+        <div class="auth-glow" aria-hidden="true"></div>
+        <div class="card auth-card">
+          <div class="auth-card-head">
+            <div class="auth-brand">VASTRA</div>
+            <h2 class="auth-card-title">Create account</h2>
+            <p class="muted">Unlock drops, track orders, and save your favorites.</p>
+          </div>
+
+          <form id="signupForm" class="auth-form">
+            <div class="float-field auth-stagger">
+              <input name="name" type="text" placeholder=" " autocomplete="name" required>
+              <label>Full name</label>
+            </div>
+            <div class="float-field auth-stagger">
+              <input name="email" type="email" placeholder=" " autocomplete="email" required>
+              <label>Email</label>
+            </div>
+            <div class="float-field auth-stagger">
+              <input name="password" type="password" placeholder=" " autocomplete="new-password" required>
+              <label>Password</label>
+            </div>
+
+            <p id="signupError" class="inline-error" style="margin-top:4px;"></p>
+
+            <button id="signupBtn" class="btn primary auth-cta auth-stagger" type="submit">
+              Create account
+            </button>
+
+            <p class="muted auth-foot auth-stagger">
+              Already have an account?
+              <a class="auth-link" href="#/login">Sign in</a>
+            </p>
+          </form>
+        </div>
+      </div>
+    </section>
   `;
   document.getElementById("signupForm").addEventListener("submit", async (event) => {
     event.preventDefault();

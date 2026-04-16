@@ -46,6 +46,9 @@ function requireAuth() {
 }
 
 async function router() {
+  // Safety: avoid "scroll freeze" if a drawer left overflow locked.
+  document.documentElement.style.overflow = "";
+  document.body.style.overflow = "";
   mountMiniCart();
   bindRipplesOnce();
   renderNavbar((target) => {
@@ -108,6 +111,16 @@ window.addEventListener("hashchange", router);
 window.addEventListener("load", router);
 window.addEventListener("offline", () => showToast("You are offline. Some actions may fail."));
 window.addEventListener("online", () => showToast("Back online."));
+
+// Extra safety: ensure scroll is never stuck locked.
+window.addEventListener(
+  "load",
+  () => {
+    document.documentElement.style.overflow = "";
+    document.body.style.overflow = "auto";
+  },
+  { once: true }
+);
 
 // Ensure navbar + protected routes update after Firebase restores session.
 (async function bindAuthRerender() {

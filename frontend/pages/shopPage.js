@@ -115,6 +115,7 @@ export async function shopPage(app) {
   async function loadProducts() {
     filterBtn.disabled = true;
     filterBtn.innerHTML = '<span class="spinner"></span>';
+    productsEl.setAttribute("aria-busy", "true");
     productsEl.innerHTML = Array.from({ length: 8 }, () => '<div class="skeleton skeleton-card"></div>').join("");
     try {
       console.log("Firebase API:", window.firebaseApi);
@@ -185,6 +186,7 @@ export async function shopPage(app) {
     } finally {
       filterBtn.disabled = false;
       filterBtn.textContent = "Apply";
+      productsEl.setAttribute("aria-busy", "false");
     }
   }
 
