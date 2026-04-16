@@ -154,7 +154,7 @@ export async function productPage(app, id) {
           stock: product.stock
         };
         console.log("Adding product:", clean);
-        await window.firebaseApi.upsertCartItem(clean, 1);
+        addToCart(clean);
         btn.classList.remove("pulse");
         void btn.offsetWidth;
         btn.classList.add("pulse");

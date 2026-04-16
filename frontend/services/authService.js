@@ -60,3 +60,25 @@ export function getCurrentUser() {
   if (derived) setJson(USER_KEY, derived);
   return derived;
 }
+
+// Keep SPA session in sync with Firebase auth (persists across refresh)
+(async function bindAuthPersistence() {
+  try {
+    if (window.firebaseReady) await window.firebaseReady;
+    if (!window.firebaseApi?.subscribeAuth) return;
+    window.firebaseApi.subscribeAuth(async (firebaseUser) => {
+      try {
+        if (!firebaseUser) {
+          removeJson(TOKEN_KEY);
+          removeJson(USER_KEY);
+          return;
+        }
+        await persistSession(firebaseUser);
+      } catch (e) {
+        console.warn("[auth] session persist failed", e);
+      }
+    });
+  } catch {
+    // ignore
+  }
+})();

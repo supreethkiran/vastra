@@ -6,9 +6,26 @@ export const LAST_ORDER_KEY = "vastra_last_order";
 
 const memoryStore = new Map();
 
+function canUseLocalStorage() {
+  try {
+    if (typeof window === "undefined" || !window.localStorage) return false;
+    const k = "__vastra_ls_test__";
+    window.localStorage.setItem(k, "1");
+    window.localStorage.removeItem(k);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function getJson(key, fallback) {
   try {
-    const raw = memoryStore.has(key) ? memoryStore.get(key) : JSON.stringify(fallback);
+    const raw = canUseLocalStorage()
+      ? window.localStorage.getItem(key)
+      : memoryStore.has(key)
+        ? memoryStore.get(key)
+        : null;
+    if (raw === null || raw === undefined || raw === "") return fallback;
     return JSON.parse(raw);
   } catch (error) {
     return fallback;
@@ -16,9 +33,26 @@ export function getJson(key, fallback) {
 }
 
 export function setJson(key, value) {
-  memoryStore.set(key, JSON.stringify(value));
+  const raw = JSON.stringify(value);
+  try {
+    if (canUseLocalStorage()) {
+      window.localStorage.setItem(key, raw);
+      return;
+    }
+  } catch {
+    // fall back to memory
+  }
+  memoryStore.set(key, raw);
 }
 
 export function removeJson(key) {
+  try {
+    if (canUseLocalStorage()) {
+      window.localStorage.removeItem(key);
+      return;
+    }
+  } catch {
+    // fall back to memory
+  }
   memoryStore.delete(key);
 }

@@ -211,10 +211,10 @@
 <body>
   <header class="topbar">
     <div class="topbar-inner">
-      <a class="brand" href="./1.html">VASTRA</a>
+      <a class="brand" href="/#/">VASTRA</a>
       <div class="nav-actions">
-        <a class="btn" href="./1.html">Shop</a>
-        <a class="btn" href="./cart.html">My Bag</a>
+        <a class="btn" href="/#/">Shop</a>
+        <a class="btn" href="/#/cart">My Bag</a>
         <button id="logoutBtn" class="btn primary" type="button">Sign Out</button>
       </div>
     </div>
@@ -309,6 +309,7 @@
         const status = o.status ?? (o.paymentStatus ? o.paymentStatus : "pending");
         const dateRaw = o.createdAt?.toDate ? o.createdAt.toDate() : (o.createdAt?.seconds ? new Date(o.createdAt.seconds * 1000) : new Date(o.createdAt || o.date || Date.now()));
         const dateText = isNaN(dateRaw.getTime()) ? "—" : dateRaw.toLocaleString();
+        const items = Array.isArray(o.items) ? o.items : [];
         return `
           <article class="order">
             <div class="row">
@@ -319,6 +320,26 @@
               <span class="muted">${esc(dateText)}</span>
               <strong style="color:var(--gold);">${esc(fmtINR(total))}</strong>
             </div>
+            ${
+              items.length
+                ? `<div class="orders" style="gap:8px;margin-top:10px;">
+                    ${items
+                      .slice(0, 6)
+                      .map((it) => {
+                        const name = esc(it.name || "Item");
+                        const qty = Number(it.qty || 0);
+                        const price = Number(it.price || 0);
+                        const line = fmtINR(price * qty);
+                        return `<div class="row" style="gap:10px;">
+                          <span class="muted" style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${name} × ${qty}</span>
+                          <strong>${esc(line)}</strong>
+                        </div>`;
+                      })
+                      .join("")}
+                    ${items.length > 6 ? `<div class="muted" style="font-size:12px;">+${items.length - 6} more items</div>` : ""}
+                  </div>`
+                : `<div class="muted" style="margin-top:10px;font-size:12px;">No item details saved for this order.</div>`
+            }
           </article>
         `;
       }).join("")}
@@ -381,7 +402,18 @@
           </div>
           <div class="kpi">
             <div class="label">Cart items</div>
-            <div class="value">${cartCount}</div>
+            <div class="value" id="kpiCartCount">${cartCount}</div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:12px;">
+          <div class="row">
+            <strong>Cart preview</strong>
+            <a class="btn" href="/#/cart" style="padding:8px 12px;font-size:10px;">Open cart</a>
+          </div>
+          <div id="cartPreview" class="orders" style="gap:10px;margin-top:10px;"></div>
+          <div class="row" style="margin-top:10px;">
+            <span class="muted">Subtotal</span>
+            <strong id="cartPreviewSubtotal" style="color:var(--gold);">₹0</strong>
           </div>
         </div>
         <div class="card" style="margin-top:12px;">
@@ -415,6 +447,88 @@
       `;
     }
 
+    // ── CART SECTION (Firestore live) ──
+    let cartUnsub = null;
+    function renderCart(items){
+      const list = Array.isArray(items) ? items : [];
+      const subtotal = list.reduce((sum, it) => sum + Number(it.price || 0) * Number(it.qty || 0), 0);
+      if (!list.length){
+        contentRoot.innerHTML = `
+          <div class="section-head">
+            <div>
+              <h2 class="section-title" style="margin:0;">My Cart</h2>
+              <p class="muted" style="margin-top:6px;">Your saved items across devices.</p>
+            </div>
+            <a class="btn" href="/#/">Continue shopping</a>
+          </div>
+          <div class="card empty-state" style="margin-top:12px;">
+            <p class="muted">Your cart is empty.</p>
+          </div>
+        `;
+        return;
+      }
+      contentRoot.innerHTML = `
+        <div class="section-head">
+          <div>
+            <h2 class="section-title" style="margin:0;">My Cart</h2>
+            <p class="muted" style="margin-top:6px;">Update quantities or remove items.</p>
+          </div>
+          <a class="btn primary" href="/#/checkout">Checkout</a>
+        </div>
+        <div class="orders" style="margin-top:12px;">
+          ${list.map((it) => `
+            <article class="order" data-cart-row="${esc(it.id)}" style="display:flex;gap:12px;align-items:center;">
+              <img src="${esc(it.image)}" alt="${esc(it.name)}" style="width:64px;height:64px;border-radius:14px;object-fit:cover;border:1px solid var(--border);flex-shrink:0;">
+              <div style="flex:1;min-width:0;">
+                <div style="font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(it.name)}</div>
+                <div class="muted" style="margin-top:4px;font-size:12px;">₹${Number(it.price || 0).toLocaleString("en-IN")}</div>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end;">
+                <button class="btn" type="button" data-dec="${esc(it.id)}" style="padding:10px 12px;">−</button>
+                <span class="pill" style="min-width:52px;text-align:center;">${Number(it.qty || 0)}</span>
+                <button class="btn" type="button" data-inc="${esc(it.id)}" style="padding:10px 12px;">+</button>
+                <button class="btn" type="button" data-remove="${esc(it.id)}">Remove</button>
+              </div>
+            </article>
+          `).join("")}
+        </div>
+        <div class="card" style="margin-top:12px;">
+          <div class="row">
+            <strong>Subtotal</strong>
+            <strong style="color:var(--gold);">${esc(fmtINR(subtotal))}</strong>
+          </div>
+        </div>
+      `;
+
+      // Wire cart controls
+      list.forEach((it) => {
+        const id = String(it.id);
+        contentRoot.querySelector(`[data-inc="${CSS.escape(id)}"]`)?.addEventListener("click", () => {
+          window.firebaseApi?.setCartItemQty?.(id, Number(it.qty || 0) + 1).catch((e) => alert(e?.message || "Unable to update cart"));
+        });
+        contentRoot.querySelector(`[data-dec="${CSS.escape(id)}"]`)?.addEventListener("click", () => {
+          window.firebaseApi?.setCartItemQty?.(id, Math.max(0, Number(it.qty || 0) - 1)).catch((e) => alert(e?.message || "Unable to update cart"));
+        });
+        contentRoot.querySelector(`[data-remove="${CSS.escape(id)}"]`)?.addEventListener("click", () => {
+          window.firebaseApi?.removeCartItem?.(id).catch((e) => alert(e?.message || "Unable to remove item"));
+        });
+      });
+    }
+
+    function loadCart(){
+      setActive("cart");
+      contentRoot.innerHTML = '<div class="card empty-state"><span class="spinner" style="vertical-align:middle;"></span> <span class="muted">Loading cart…</span></div>';
+      try {
+        cartUnsub?.();
+      } catch {
+        // ignore
+      }
+      cartUnsub = window.firebaseApi?.subscribeCart?.((items) => renderCart(items));
+      if (!cartUnsub) {
+        contentRoot.innerHTML = `<div class="card empty-state"><p class="danger">Cart unavailable. Please refresh.</p></div>`;
+      }
+    }
+
     document.getElementById("logoutBtn").addEventListener("click", async () => {
       const btn = document.getElementById("logoutBtn");
       btn.disabled = true;
@@ -423,7 +537,7 @@
       try{
         await window.firebaseApi.signOutUser();
         alert("Logged out");
-        window.location.href = "/";
+        window.location.href = "/#/";
       }catch(e){
         console.error("logout failed", e);
         btn.disabled = false;
@@ -437,7 +551,7 @@
       try{
         await window.firebaseApi.signOutUser();
         alert("Logged out");
-        window.location.href = "./1.html";
+        window.location.href = "/#/";
 
       }catch(e){
         alert(e?.message || "Logout failed");
@@ -446,22 +560,58 @@
     );
     document.querySelectorAll('[data-nav="cart"]').forEach((el) =>
       el.addEventListener("click", () => {
-        window.location.href = "/cart.html";
+        loadCart();
       })
     );
 
     (async function init(){
       try{
         statusLine.textContent = "Loading your account…";
-        await window.firebaseReady;
-        const user = await window.firebaseApi?.waitForAuth?.({ requireUser: true, timeoutMs: 12000 });
-        console.log("User:", window.firebaseApi?.getCurrentUser?.() || null);
+        // Auth protection (mandatory): check immediately, then wait briefly for restore.
+        const immediate = window.firebaseApi?.getCurrentUser?.() || null;
+        if (!immediate) {
+          await window.firebaseReady;
+        }
+        const user =
+          window.firebaseApi?.getCurrentUser?.() ||
+          (await window.firebaseApi?.waitForAuth?.({ requireUser: true, timeoutMs: 12000 })) ||
+          null;
+        console.log("User:", user);
         if (!user) return redirectToLogin();
         renderUser(user);
         let cartCount = 0;
         if (window.firebaseApi?.subscribeCart) {
           window.firebaseApi.subscribeCart((items) => {
-            cartCount = Array.isArray(items) ? items.reduce((sum, it) => sum + Number(it.qty || 0), 0) : 0;
+            const list = Array.isArray(items) ? items : [];
+            cartCount = list.reduce((sum, it) => sum + Number(it.qty || 0), 0);
+            const el = document.getElementById("kpiCartCount");
+            if (el) el.textContent = String(cartCount);
+
+            const preview = document.getElementById("cartPreview");
+            const subEl = document.getElementById("cartPreviewSubtotal");
+            if (preview && subEl) {
+              const top = list.slice(0, 3);
+              if (!top.length) {
+                preview.innerHTML = '<div class="muted">Your cart is empty.</div>';
+                subEl.textContent = fmtINR(0);
+              } else {
+                preview.innerHTML = top
+                  .map(
+                    (it) => `
+                      <div class="order" style="display:flex;gap:10px;align-items:center;">
+                        <img src="${esc(it.image)}" alt="${esc(it.name)}" style="width:44px;height:44px;border-radius:10px;object-fit:cover;border:1px solid var(--border);">
+                        <div style="flex:1;min-width:0;">
+                          <div style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(it.name)}</div>
+                          <div class="muted" style="font-size:12px;margin-top:2px;">₹${Number(it.price || 0).toLocaleString("en-IN")} × ${Number(it.qty || 0)}</div>
+                        </div>
+                      </div>
+                    `
+                  )
+                  .join("");
+                const subtotal = list.reduce((sum, it) => sum + Number(it.price || 0) * Number(it.qty || 0), 0);
+                subEl.textContent = fmtINR(subtotal);
+              }
+            }
           });
         }
         const orders = await loadOrders();

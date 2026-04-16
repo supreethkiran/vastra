@@ -65,6 +65,13 @@ export function renderNavbar(onNavigate) {
     </aside>
   `;
 
+  // Brand/logo should always take user "home" without full refresh.
+  el.querySelector(".brand")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    onNavigate("#/");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+
   const btn = document.getElementById("logoutBtn");
   if (btn) {
     btn.addEventListener("click", () => {

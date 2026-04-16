@@ -39,7 +39,8 @@ function bindRipplesOnce() {
 }
 
 function requireAuth() {
-  if (!getCurrentUser()) {
+  const hasUser = Boolean(getCurrentUser() || window.firebaseApi?.getCurrentUser?.());
+  if (!hasUser) {
     // Remember intent so we can redirect after login.
     try {
       const intended = location.hash || "#/";

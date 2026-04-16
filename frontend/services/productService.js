@@ -34,9 +34,22 @@ async function fetchProductsFromFirebase(params = {}) {
     throw new Error("Products unavailable");
   }
   if (window.firebaseReady) {
-    await window.firebaseReady;
+    const ready = await Promise.race([
+      window.firebaseReady,
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Firebase is taking too long to initialize. Please retry.")), 8000)
+      )
+    ]);
+    if (!ready) {
+      throw new Error("Firebase initialization failed. Check Firebase config and authorized domains.");
+    }
   }
-  const remote = await window.firebaseApi.getProducts();
+  const remote = await Promise.race([
+    window.firebaseApi.getProducts(),
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Products request timed out. Please retry.")), 10000)
+    )
+  ]);
   const normalized = normalizeProducts(remote);
   const filtered = filterProducts(normalized, params);
   return { products: filtered };

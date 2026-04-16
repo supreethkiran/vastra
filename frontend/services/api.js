@@ -30,8 +30,11 @@ export async function api(path, options = {}) {
 
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
-      const fallbackMessage = `Request failed (${response.status})`;
-      throw new Error(data.message || fallbackMessage);
+      const statusText = String(response.statusText || "").trim();
+      const apiHint = `${response.status}${statusText ? ` ${statusText}` : ""}`;
+      const pathHint = `${API_BASE}${path}`;
+      const fallbackMessage = `Request failed: ${apiHint} (${pathHint})`;
+      throw new Error(String(data.message || "").trim() || fallbackMessage);
     }
     return data;
   } catch (error) {

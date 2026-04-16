@@ -54,7 +54,7 @@ export function wishlistPage(app) {
         image: String(item.image || "")
       };
       console.log("Adding product:", clean);
-      await window.firebaseApi.upsertCartItem(clean, 1);
+      addToCart(clean);
       showToast("Added to Cart");
     });
     app.querySelector(`[data-remove="${item.id}"]`)?.addEventListener("click", () => {

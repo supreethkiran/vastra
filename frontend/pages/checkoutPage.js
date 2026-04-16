@@ -212,6 +212,9 @@ export function checkoutPage(app) {
         }
       });
 
+      // Ensure cart is cleared immediately in UI (server also clears).
+      window.firebaseApi?.clearCart?.().catch(() => {});
+
       // The backend stores the order at users/{uid}/orders/{paymentId} and returns orderId=paymentId.
       setJson(LAST_ORDER_KEY, { id: orderId, totalAmount: Math.round(amount / 100) });
       showToast("Order placed");
