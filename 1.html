@@ -1189,6 +1189,223 @@
       .reveal { transition: none; }
       .btn, .product-card, .cat-card, .journal-card { transition: none; }
     }
+
+    /* ── VIDEO HERO ── */
+    .hero-video {
+      position: absolute; inset: 0; z-index: 0;
+      pointer-events: none;
+    }
+    .hero-video video {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      filter: brightness(0.42) saturate(0.7);
+    }
+    .hero-video-gradient {
+      position: absolute; inset: 0;
+      background:
+        linear-gradient(to right, rgba(6,6,8,0.75) 0%, rgba(6,6,8,0.1) 60%),
+        linear-gradient(to top, rgba(6,6,8,0.9) 0%, rgba(6,6,8,0) 50%),
+        linear-gradient(to bottom, rgba(6,6,8,0.5) 0%, rgba(6,6,8,0) 30%);
+    }
+
+    /* ── PARALLAX ── */
+    .parallax-el { will-change: transform; }
+
+    /* ── DROP HIGHLIGHT ── */
+    .drop-section {
+      position: relative; overflow: hidden;
+      padding: 0;
+      min-height: 90vh;
+      display: grid; grid-template-columns: 1fr 1fr;
+    }
+    .drop-visual {
+      position: relative; overflow: hidden;
+      min-height: 90vh;
+    }
+    .drop-visual img {
+      width: 100%; height: 100%; object-fit: cover;
+      transition: transform 12s var(--ease);
+      transform: scale(1.06);
+    }
+    .drop-visual:hover img { transform: scale(1); }
+    .drop-visual-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(to right, rgba(6,6,8,0) 60%, rgba(6,6,8,1) 100%);
+    }
+    .drop-text {
+      display: flex; flex-direction: column;
+      justify-content: center;
+      padding: 80px 72px 80px 60px;
+      position: relative;
+      background: var(--bg);
+    }
+    .drop-counter {
+      display: flex; align-items: center; gap: 14px;
+      font-size: 9px; letter-spacing: 0.3em; text-transform: uppercase;
+      color: var(--gold); font-weight: 600; margin-bottom: 24px;
+    }
+    .drop-counter-line { width: 32px; height: 1px; background: var(--gold); }
+    .drop-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(56px, 6vw, 96px);
+      line-height: 0.92; letter-spacing: 0.02em;
+      margin-bottom: 28px;
+    }
+    .drop-title em {
+      font-style: italic; font-family: 'Cormorant Garamond', serif;
+      font-weight: 300; color: var(--gold);
+    }
+    .drop-desc {
+      font-size: 14px; line-height: 1.85; color: var(--muted);
+      font-weight: 300; max-width: 420px; margin-bottom: 40px;
+    }
+    .drop-meta {
+      display: flex; gap: 32px; margin-bottom: 44px;
+    }
+    .drop-meta-item {}
+    .drop-meta-val {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 32px; letter-spacing: 0.04em; color: var(--text);
+      line-height: 1;
+    }
+    .drop-meta-label {
+      font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--muted); margin-top: 4px;
+    }
+    .drop-timer {
+      display: flex; gap: 8px; align-items: center;
+      margin-bottom: 40px;
+    }
+    .drop-timer-block {
+      background: var(--surface2); border: 1px solid var(--border);
+      padding: 10px 16px; text-align: center; min-width: 60px;
+    }
+    .drop-timer-num {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px; letter-spacing: 0.08em; color: var(--gold); display: block;
+    }
+    .drop-timer-label {
+      font-size: 8px; letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--muted); margin-top: 2px; display: block;
+    }
+    .drop-timer-sep {
+      font-family: 'Bebas Neue', sans-serif; font-size: 28px;
+      color: var(--muted); opacity: 0.5; align-self:flex-start; padding-top:8px;
+    }
+    .drop-bg-number {
+      position: absolute; bottom: -20px; right: -10px;
+      font-family: 'Bebas Neue', sans-serif; font-size: 280px;
+      color: rgba(201,169,110,0.03); letter-spacing: -0.05em;
+      line-height: 1; pointer-events: none; user-select: none;
+    }
+
+    /* ── HORIZONTAL SCROLL SHOWCASE ── */
+    .h-scroll-section { padding: 80px 0 60px; overflow: hidden; }
+    .h-scroll-header {
+      display: flex; align-items: flex-end; justify-content: space-between;
+      padding: 0 32px; max-width: 1320px; margin: 0 auto 36px;
+    }
+    .h-scroll-track-wrap {
+      position: relative;
+      display: flex; align-items: center;
+    }
+    .h-scroll-track {
+      display: flex; gap: 20px;
+      overflow-x: auto; overflow-y: visible;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      padding: 16px 32px 24px;
+      cursor: grab;
+    }
+    .h-scroll-track:active { cursor: grabbing; }
+    .h-scroll-track::-webkit-scrollbar { display: none; }
+    .h-card {
+      flex: 0 0 320px; scroll-snap-align: start;
+      position: relative; overflow: hidden;
+      border-radius: 14px;
+      transition: transform 0.5s var(--ease), box-shadow 0.5s;
+    }
+    .h-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 30px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(201,169,110,0.2);
+    }
+    .h-card-img {
+      width: 100%; aspect-ratio: 3/4; object-fit: cover;
+      transition: transform 0.8s var(--ease);
+    }
+    .h-card:hover .h-card-img { transform: scale(1.06); }
+    .h-card-body {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      padding: 20px;
+      background: linear-gradient(to top, rgba(6,6,8,0.92) 0%, transparent 100%);
+      transform: translateY(52px); transition: transform 0.45s var(--ease);
+    }
+    .h-card:hover .h-card-body { transform: translateY(0); }
+    .h-card-name {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px; letter-spacing: 0.06em; margin-bottom: 4px;
+    }
+    .h-card-price { font-size: 13px; color: var(--gold); font-weight: 600; }
+    .h-card-btn {
+      margin-top: 12px; width: 100%; background: var(--gold);
+      border: none; color: #060608; padding: 10px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase;
+      font-weight: 700; transition: background 0.3s;
+      display: block;
+    }
+    .h-card-btn:hover { background: var(--gold2); }
+    .h-scroll-arrow {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      z-index: 10; background: rgba(10,10,14,0.9);
+      border: 1px solid var(--border); color: var(--text);
+      width: 48px; height: 48px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all 0.3s; font-size: 18px;
+    }
+    .h-scroll-arrow:hover { border-color: var(--gold); color: var(--gold); }
+    .h-scroll-arrow.left { left: 6px; }
+    .h-scroll-arrow.right { right: 6px; }
+    @media (max-width: 768px) {
+      .h-scroll-arrow { display: none; }
+      .h-card { flex: 0 0 260px; }
+      .h-scroll-header { padding: 0 16px; }
+      .h-scroll-track { padding: 16px 16px 24px; }
+    }
+
+    /* ── RECOMMENDATIONS STRIP ── */
+    .reco-section { padding: 60px 0 80px; }
+    .reco-strip {
+      display: flex; gap: 0; overflow-x: auto;
+      scrollbar-width: none; padding: 0;
+    }
+    .reco-strip::-webkit-scrollbar { display: none; }
+    .reco-card {
+      flex: 1 1 0; min-width: 220px;
+      display: flex; align-items: center; gap: 14px;
+      padding: 18px 20px;
+      border-right: 1px solid var(--border);
+      transition: background 0.3s;
+      cursor: pointer;
+    }
+    .reco-card:last-child { border-right: 0; }
+    .reco-card:hover { background: rgba(255,255,255,0.02); }
+    .reco-img {
+      width: 64px; height: 80px; object-fit: cover; flex-shrink: 0;
+      transition: transform 0.4s var(--ease);
+    }
+    .reco-card:hover .reco-img { transform: scale(1.05); }
+    .reco-info {}
+    .reco-name { font-size: 12px; font-weight: 500; margin-bottom: 4px; }
+    .reco-price { font-size: 12px; color: var(--gold); }
+    .reco-wrapper {
+      border: 1px solid var(--border); margin: 0 32px;
+    }
+    @media (max-width: 768px) {
+      .reco-wrapper { margin: 0 16px; }
+      .reco-card { min-width: 180px; }
+    }
   </style>
 </head>
 <body>
@@ -1252,6 +1469,16 @@
   <div class="hero-orb hero-orb-1"></div>
   <div class="hero-orb hero-orb-2"></div>
   <div class="hero-orb hero-orb-3"></div>
+
+  <!-- CINEMATIC VIDEO BACKGROUND -->
+  <div class="hero-video">
+    <video autoplay muted loop playsinline preload="metadata"
+      poster="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1800&h=1100&fit=crop&q=80">
+      <source src="https://videos.pexels.com/video-files/5386700/5386700-hd_1280_720_25fps.mp4" type="video/mp4">
+      <source src="https://videos.pexels.com/video-files/3629578/3629578-hd_1280_720_30fps.mp4" type="video/mp4">
+    </video>
+    <div class="hero-video-gradient"></div>
+  </div>
 
   <div class="hero-slide active" id="slide-0">
     <img src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1800&h=1100&fit=crop&q=80" alt="VASTRA">
@@ -1337,7 +1564,187 @@
   </div>
 </div>
 
+<!-- DROP HIGHLIGHT -->
+<section class="drop-section reveal" id="drop">
+  <div class="drop-visual parallax-el" data-speed="0.15">
+    <img src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=1200&h=1600&fit=crop&q=85" alt="Drop 01 — VASTRA">
+    <div class="drop-visual-overlay"></div>
+  </div>
+  <div class="drop-text">
+    <div class="drop-counter">
+      <span class="drop-counter-line"></span>
+      Drop 01 · Exclusive Release · 2026
+    </div>
+    <h2 class="drop-title">
+      The <em>Signature</em><br>
+      Collection
+    </h2>
+    <p class="drop-desc">
+      Crafted for those who move with intention. Our debut drop redefines Indian streetwear — premium fabrics, minimal silhouettes, maximum statement.
+    </p>
+    <div class="drop-meta">
+      <div class="drop-meta-item">
+        <div class="drop-meta-val">24</div>
+        <div class="drop-meta-label">Exclusive Pieces</div>
+      </div>
+      <div class="drop-meta-item">
+        <div class="drop-meta-val">100%</div>
+        <div class="drop-meta-label">Premium Cotton</div>
+      </div>
+      <div class="drop-meta-item">
+        <div class="drop-meta-val">01</div>
+        <div class="drop-meta-label">Limited Drop</div>
+      </div>
+    </div>
+    <div class="drop-timer" id="dropTimer">
+      <div class="drop-timer-block">
+        <span class="drop-timer-num" id="timerH">00</span>
+        <span class="drop-timer-label">Hours</span>
+      </div>
+      <span class="drop-timer-sep">:</span>
+      <div class="drop-timer-block">
+        <span class="drop-timer-num" id="timerM">00</span>
+        <span class="drop-timer-label">Mins</span>
+      </div>
+      <span class="drop-timer-sep">:</span>
+      <div class="drop-timer-block">
+        <span class="drop-timer-num" id="timerS">00</span>
+        <span class="drop-timer-label">Secs</span>
+      </div>
+    </div>
+    <a href="#products" class="btn btn-gold" style="width:fit-content;">
+      <span>Shop The Drop</span>
+      <span class="btn-icon">→</span>
+    </a>
+    <div class="drop-bg-number">01</div>
+  </div>
+</section>
+
+<!-- HORIZONTAL SHOWCASE -->
+<section class="h-scroll-section" id="showcase">
+  <div class="h-scroll-header">
+    <div>
+      <p class="sec-label">Curated for you</p>
+      <h2 class="sec-title">New Arrivals</h2>
+    </div>
+    <a href="#products" class="sec-link">View all styles</a>
+  </div>
+  <div class="h-scroll-track-wrap">
+    <button class="h-scroll-arrow left" id="hScrollLeft" aria-label="Scroll left">‹</button>
+    <div class="h-scroll-track" id="hScrollTrack">
+      <div class="h-card">
+        <img class="h-card-img" src="https://images.unsplash.com/photo-1551028719-00167b16eac5?w=700&h=900&fit=crop&q=80" alt="Midnight Overshirt" loading="lazy">
+        <div class="h-card-body">
+          <div class="h-card-name">Midnight Overshirt</div>
+          <div class="h-card-price">₹2,499</div>
+          <button class="h-card-btn add-cart-btn quick-add-btn" data-id="h1" data-name="Midnight Overshirt" data-price="2499" data-image="https://images.unsplash.com/photo-1551028719-00167b16eac5?w=700&h=900&fit=crop&q=80">Add to Bag</button>
+        </div>
+      </div>
+      <div class="h-card">
+        <img class="h-card-img" src="https://images.unsplash.com/photo-1552902865-b72c031ac5ea?w=700&h=900&fit=crop&q=80" alt="Core Cargo Pants" loading="lazy">
+        <div class="h-card-body">
+          <div class="h-card-name">Core Cargo Pants</div>
+          <div class="h-card-price">₹3,199</div>
+          <button class="h-card-btn add-cart-btn quick-add-btn" data-id="h2" data-name="Core Cargo Pants" data-price="3199" data-image="https://images.unsplash.com/photo-1552902865-b72c031ac5ea?w=700&h=900&fit=crop&q=80">Add to Bag</button>
+        </div>
+      </div>
+      <div class="h-card">
+        <img class="h-card-img" src="https://images.unsplash.com/photo-1576995853123-5a10305d93c0?w=700&h=900&fit=crop&q=80" alt="Cloud Hoodie" loading="lazy">
+        <div class="h-card-body">
+          <div class="h-card-name">Cloud Hoodie</div>
+          <div class="h-card-price">₹1,899</div>
+          <button class="h-card-btn add-cart-btn quick-add-btn" data-id="h3" data-name="Cloud Hoodie" data-price="1899" data-image="https://images.unsplash.com/photo-1576995853123-5a10305d93c0?w=700&h=900&fit=crop&q=80">Add to Bag</button>
+        </div>
+      </div>
+      <div class="h-card">
+        <img class="h-card-img" src="https://images.unsplash.com/photo-1503341504253-dff4815485f1?w=700&h=900&fit=crop&q=80" alt="Washed Graphic Tee" loading="lazy">
+        <div class="h-card-body">
+          <div class="h-card-name">Washed Graphic Tee</div>
+          <div class="h-card-price">₹999</div>
+          <button class="h-card-btn add-cart-btn quick-add-btn" data-id="h4" data-name="Washed Graphic Tee" data-price="999" data-image="https://images.unsplash.com/photo-1503341504253-dff4815485f1?w=700&h=900&fit=crop&q=80">Add to Bag</button>
+        </div>
+      </div>
+      <div class="h-card">
+        <img class="h-card-img" src="https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=700&h=900&fit=crop&q=80" alt="Signature Pullover" loading="lazy">
+        <div class="h-card-body">
+          <div class="h-card-name">Signature Pullover</div>
+          <div class="h-card-price">₹2,199</div>
+          <button class="h-card-btn add-cart-btn quick-add-btn" data-id="h5" data-name="Signature Pullover" data-price="2199" data-image="https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=700&h=900&fit=crop&q=80">Add to Bag</button>
+        </div>
+      </div>
+      <div class="h-card">
+        <img class="h-card-img" src="https://images.unsplash.com/photo-1516826957135-700dedea698c?w=700&h=900&fit=crop&q=80" alt="Zen Pullover Hoodie" loading="lazy">
+        <div class="h-card-body">
+          <div class="h-card-name">Zen Pullover Hoodie</div>
+          <div class="h-card-price">₹1,899</div>
+          <button class="h-card-btn add-cart-btn quick-add-btn" data-id="h6" data-name="Zen Pullover Hoodie" data-price="1899" data-image="https://images.unsplash.com/photo-1516826957135-700dedea698c?w=700&h=900&fit=crop&q=80">Add to Bag</button>
+        </div>
+      </div>
+    </div>
+    <button class="h-scroll-arrow right" id="hScrollRight" aria-label="Scroll right">›</button>
+  </div>
+</section>
+
+<!-- RECOMMENDATIONS STRIP -->
+<section class="reco-section" id="recommendations">
+  <div class="wrap">
+    <div class="sec-head reveal" style="margin-bottom:28px;">
+      <div>
+        <p class="sec-label">Trending Now</p>
+        <h2 class="sec-title" style="font-size:clamp(28px,3.5vw,44px);">You May Also Like</h2>
+      </div>
+    </div>
+  </div>
+  <div class="reco-wrapper reveal">
+    <div class="reco-strip">
+      <a class="reco-card" href="2.html?id=1">
+        <img class="reco-img" src="https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=200&h=260&fit=crop&q=80" alt="Signature Pullover" loading="lazy">
+        <div class="reco-info">
+          <div class="reco-name">Signature Pullover</div>
+          <div class="reco-price">₹2,199</div>
+        </div>
+      </a>
+      <a class="reco-card" href="2.html?id=2">
+        <img class="reco-img" src="https://images.unsplash.com/photo-1551028719-00167b16eac5?w=200&h=260&fit=crop&q=80" alt="Midnight Overshirt" loading="lazy">
+        <div class="reco-info">
+          <div class="reco-name">Midnight Overshirt</div>
+          <div class="reco-price">₹2,499</div>
+        </div>
+      </a>
+      <a class="reco-card" href="2.html?id=3">
+        <img class="reco-img" src="https://images.unsplash.com/photo-1509631179647-0177331693ae?w=200&h=260&fit=crop&q=80" alt="Slim Track Trouser" loading="lazy">
+        <div class="reco-info">
+          <div class="reco-name">Slim Track Trouser</div>
+          <div class="reco-price">₹1,599</div>
+        </div>
+      </a>
+      <a class="reco-card" href="2.html?id=4">
+        <img class="reco-img" src="https://images.unsplash.com/photo-1576995853123-5a10305d93c0?w=200&h=260&fit=crop&q=80" alt="Cloud Hoodie" loading="lazy">
+        <div class="reco-info">
+          <div class="reco-name">Cloud Hoodie</div>
+          <div class="reco-price">₹1,899</div>
+        </div>
+      </a>
+      <a class="reco-card" href="2.html?id=5">
+        <img class="reco-img" src="https://images.unsplash.com/photo-1503341504253-dff4815485f1?w=200&h=260&fit=crop&q=80" alt="Washed Graphic Tee" loading="lazy">
+        <div class="reco-info">
+          <div class="reco-name">Washed Graphic Tee</div>
+          <div class="reco-price">₹999</div>
+        </div>
+      </a>
+      <a class="reco-card" href="2.html?id=6">
+        <img class="reco-img" src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=200&h=260&fit=crop&q=80" alt="Editorial Dress" loading="lazy">
+        <div class="reco-info">
+          <div class="reco-name">Editorial Dress</div>
+          <div class="reco-price">₹3,499</div>
+        </div>
+      </a>
+    </div>
+  </div>
+</section>
+
 <!-- CATEGORIES -->
+
 <section class="cat-section" id="categories">
   <div class="wrap">
     <div class="sec-head reveal">
@@ -2397,7 +2804,98 @@ async function initCatalog() {
   
   renderProducts(products);
 }
+/* ─── NEW PREMIUM INTERACTIVE LOGIC ───────────────────────── */
+function initParallax() {
+  const elements = document.querySelectorAll('.parallax-el');
+  window.addEventListener('scroll', () => {
+    const scrolled = window.pageYOffset;
+    elements.forEach(el => {
+      const speed = parseFloat(el.dataset.speed) || 0.1;
+      const rect = el.getBoundingClientRect();
+      const inView = rect.top < window.innerHeight && rect.bottom > 0;
+      if (inView) {
+        const yPos = -(scrolled * speed);
+        const img = el.querySelector('img');
+        if (img) img.style.transform = `scale(1.06) translateY(${scrolled * speed * 0.5}px)`;
+      }
+    });
+  });
+}
+
+function initDropTimer() {
+  const hEl = document.getElementById('timerH');
+  const mEl = document.getElementById('timerM');
+  const sEl = document.getElementById('timerS');
+  if (!hEl) return;
+
+  // Set target to end of today
+  const target = new Date();
+  target.setHours(23, 59, 59, 999);
+
+  function update() {
+    const now = new Date();
+    const diff = target - now;
+    if (diff <= 0) {
+      hEl.innerText = mEl.innerText = sEl.innerText = '00';
+      return;
+    }
+    const h = Math.floor(diff / (1000 * 60 * 60));
+    const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const s = Math.floor((diff % (1000 * 60)) / 1000);
+    hEl.innerText = String(h).padStart(2, '0');
+    mEl.innerText = String(m).padStart(2, '0');
+    sEl.innerText = String(s).padStart(2, '0');
+  }
+  setInterval(update, 1000);
+  update();
+}
+
+function initHorizontalShowcase() {
+  const track = document.getElementById('hScrollTrack');
+  const leftBtn = document.getElementById('hScrollLeft');
+  const rightBtn = document.getElementById('hScrollRight');
+  if (!track) return;
+
+  const scrollAmount = 340;
+
+  leftBtn?.addEventListener('click', () => {
+    track.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+  });
+
+  rightBtn?.addEventListener('click', () => {
+    track.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+  });
+
+  // Basic drag to scroll
+  let isDown = false;
+  let startX;
+  let scrollLeft;
+
+  track.addEventListener('mousedown', (e) => {
+    isDown = true;
+    track.classList.add('active');
+    startX = e.pageX - track.offsetLeft;
+    scrollLeft = track.scrollLeft;
+  });
+  track.addEventListener('mouseleave', () => {
+    isDown = false;
+  });
+  track.addEventListener('mouseup', () => {
+    isDown = false;
+  });
+  track.addEventListener('mousemove', (e) => {
+    if(!isDown) return;
+    e.preventDefault();
+    const x = e.pageX - track.offsetLeft;
+    const walk = (x - startX) * 2;
+    track.scrollLeft = scrollLeft - walk;
+  });
+}
+
 initCatalog();
+initParallax();
+initDropTimer();
+initHorizontalShowcase();
 
 initSpotlightTilt();
 initCatTilt();
