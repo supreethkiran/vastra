@@ -78,6 +78,21 @@ async function router() {
   const user = getCurrentUser();
   const [, route, id, sub] = hash.split("/");
 
+  // If user is already authenticated, never keep them on auth pages after reload.
+  // This also fixes "reload goes to login" when the hash is still #/login.
+  try {
+    const firebaseUser = window.firebaseApi?.getCurrentUser?.() || null;
+    const isAuthed = Boolean(user || firebaseUser);
+    if (isAuthed && (route === "login" || route === "signup")) {
+      const redirect = sessionStorage.getItem("vastra_post_auth_redirect") || window.__vastraLastNonAuthHash || "#/";
+      sessionStorage.removeItem("vastra_post_auth_redirect");
+      location.hash = redirect || "#/";
+      return;
+    }
+  } catch {
+    // ignore
+  }
+
   if (route !== "login" && route !== "signup") {
     window.__vastraLastNonAuthHash = hash;
   }
